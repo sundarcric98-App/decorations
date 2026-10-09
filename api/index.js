@@ -77701,14 +77701,13 @@ var require_multer = __commonJS({
   }
 });
 
-// server/src/vercel.ts
-var vercel_exports = {};
-__export(vercel_exports, {
-  default: () => vercel_default
-});
-module.exports = __toCommonJS(vercel_exports);
-
 // server/src/app.ts
+var app_exports = {};
+__export(app_exports, {
+  app: () => app,
+  default: () => app_default
+});
+module.exports = __toCommonJS(app_exports);
 var import_express19 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 
@@ -87743,9 +87742,10 @@ app.use((req, res) => {
 });
 app.use(errorHandler);
 var app_default = app;
-
-// server/src/vercel.ts
-var vercel_default = app_default;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  app
+});
 /*! Bundled license information:
 
 depd/index.js:
@@ -88359,4 +88359,4 @@ jspdf-autotable/dist/jspdf.plugin.autotable.js:
    *
    *)
 */
-module.exports = app_default;
+module.exports = app_default; module.exports.default = app_default;
