@@ -9,6 +9,7 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { default: false },
 });
 
 export const publicFormLimiter = rateLimit({
@@ -20,4 +21,6 @@ export const publicFormLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { default: false },
 });
+

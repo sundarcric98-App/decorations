@@ -83424,7 +83424,8 @@ var authLimiter = lib_default({
     message: "Too many login attempts. Please try again after 15 minutes."
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  validate: { default: false }
 });
 var publicFormLimiter = lib_default({
   windowMs: 10 * 60 * 1e3,
@@ -83436,7 +83437,8 @@ var publicFormLimiter = lib_default({
     message: "Too many enquiry requests submitted from this network. Please wait a few minutes."
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  validate: { default: false }
 });
 
 // server/src/middleware/auth.middleware.ts
@@ -87672,6 +87674,7 @@ var uploads_routes_default = router18;
 // server/src/app.ts
 import_dotenv2.default.config();
 var app = (0, import_express19.default)();
+app.set("trust proxy", 1);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }

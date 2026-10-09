@@ -33,6 +33,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for Vercel and reverse proxies
+app.set('trust proxy', 1);
+
 // Security Headers
 app.use(
   helmet({
