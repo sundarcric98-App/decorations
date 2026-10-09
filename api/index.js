@@ -88343,3 +88343,4 @@ jspdf-autotable/dist/jspdf.plugin.autotable.js:
    *
    *)
 */
+module.exports = app_default;
