@@ -1,4 +1,3 @@
-/* Sathuragiri Decoration API Serverless Bundle */
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -88363,15 +88362,3 @@ jspdf-autotable/dist/jspdf.plugin.autotable.js:
    *
    *)
 */
-
-const _app = (typeof app_default !== 'undefined' && app_default) || 
-             (typeof app !== 'undefined' && app) || 
-             (module.exports && (module.exports.default || module.exports.app || module.exports));
-
-const serverlessHandler = (req, res) => {
-  return _app(req, res);
-};
-
-module.exports = serverlessHandler;
-module.exports.default = serverlessHandler;
-
