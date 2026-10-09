@@ -98,27 +98,41 @@ var import_crypto = __toESM(require("crypto"), 1);
 var import_pg = __toESM(require("pg"), 1);
 var import_dotenv = __toESM(require("dotenv"), 1);
 import_dotenv.default.config();
-var connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres";
-var isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
-if (!process.env.DATABASE_URL) {
-  console.warn("\u26A0\uFE0F Warning: DATABASE_URL is not set in environment variables. Defaulting to local connection.");
+var _pool = null;
+function getPool() {
+  if (!_pool) {
+    const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres";
+    const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+    if (!process.env.DATABASE_URL) {
+      console.warn("\u26A0\uFE0F Warning: DATABASE_URL is not set in environment variables. Defaulting to local connection.");
+    }
+    _pool = new import_pg.default.Pool({
+      connectionString,
+      ssl: isLocal ? false : { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 3e4,
+      connectionTimeoutMillis: 1e4
+    });
+    _pool.on("error", (err) => {
+      console.error("Unexpected error on idle PostgreSQL client:", err.message);
+    });
+  }
+  return _pool;
 }
-var pool = global.__pgPool || new import_pg.default.Pool({
-  connectionString,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
-  max: 10,
-  idleTimeoutMillis: 3e4,
-  connectionTimeoutMillis: 1e4
-});
-if (process.env.NODE_ENV !== "production") {
-  global.__pgPool = pool;
-}
-pool.on("error", (err) => {
-  console.error("Unexpected error on idle PostgreSQL client:", err.message);
+var pool = new Proxy({}, {
+  get(target, prop, receiver) {
+    const actualPool = getPool();
+    const value = Reflect.get(actualPool, prop, receiver);
+    if (typeof value === "function") {
+      return value.bind(actualPool);
+    }
+    return value;
+  }
 });
 async function query(text, params = []) {
+  const p = getPool();
   const start = Date.now();
-  const res = await pool.query(text, params);
+  const res = await p.query(text, params);
   const duration = Date.now() - start;
   if (process.env.NODE_ENV === "development" && duration > 500) {
     console.warn(`\u26A0\uFE0F Slow query (${duration}ms):`, text);
@@ -130,7 +144,8 @@ async function queryOne(text, params = []) {
   return rows[0] || null;
 }
 async function transaction(callback) {
-  const client = await pool.connect();
+  const p = getPool();
+  const client = await p.connect();
   try {
     await client.query("BEGIN");
     const result = await callback(client);
@@ -147,7 +162,8 @@ var db = {
   query,
   queryOne,
   transaction,
-  pool
+  pool,
+  getPool
 };
 
 // server/src/modules/auth/auth.service.ts
