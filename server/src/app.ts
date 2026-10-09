@@ -62,8 +62,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Request logging
-if (process.env.NODE_ENV !== 'test') {
+// Request logging (development only)
+if (process.env.NODE_ENV === 'development' && !process.env.VERCEL) {
   app.use(morgan('dev'));
 }
 
