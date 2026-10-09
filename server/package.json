@@ -1,6 +1,7 @@
 {
   "name": "sathuragiri-decoration-server",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend API for Sathuragiri Decoration Event Management Web Application",
   "main": "dist/server.js",
   "scripts": {

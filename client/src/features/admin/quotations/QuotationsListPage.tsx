@@ -58,7 +58,7 @@ export const QuotationsListPage: React.FC = () => {
   });
 
   const handleDownloadPdf = (id: string, quoteNumber: string) => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+    const apiUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000/api/v1' : '/api/v1');
     window.open(`${apiUrl}/quotations/${id}/pdf`, '_blank');
   };
 

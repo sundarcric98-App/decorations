@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import { app } from '../app';
-import { sanitizeCsvField } from '../utils/csv';
+import { app } from '../app.js';
+import { sanitizeCsvField } from '../utils/csv.js';
 
 describe('Sathuragiri Decoration - Backend API Test Suite', () => {
   let authToken = '';

@@ -1,6 +1,7 @@
 {
   "name": "sathuragiri-decoration",
   "version": "1.0.0",
+  "type": "module",
   "description": "Sathuragiri Decoration - Event Decoration, Wedding Planning & Event Services Management Web Application",
   "scripts": {
     "install:all": "npm install --include=dev && npm install --prefix server --include=dev && npm install --prefix client --include=dev",

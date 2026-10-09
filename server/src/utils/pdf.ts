@@ -82,7 +82,18 @@ export class PdfGenerator {
       `₹${Number(item.total).toLocaleString('en-IN')}`,
     ]);
 
-    autoTable(doc, {
+    const runAutoTable = (docInstance: any, options: any) => {
+      const at: any = autoTable;
+      if (typeof at === 'function') {
+        at(docInstance, options);
+      } else if (typeof at?.default === 'function') {
+        at.default(docInstance, options);
+      } else if (typeof docInstance.autoTable === 'function') {
+        docInstance.autoTable(options);
+      }
+    };
+
+    runAutoTable(doc, {
       startY,
       head: [['#', 'Item Description', 'Qty', 'Unit Price', 'Discount', 'Total']],
       body: tableData,
