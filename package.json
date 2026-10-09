@@ -7,8 +7,7 @@
     "install:all": "npm install --include=dev && npm install --prefix server --include=dev && npm install --prefix client --include=dev",
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,magenta\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:server": "npm run dev --prefix server",
-    "dev:client": "npm run dev --prefix client",
-    "build": "npm run build --prefix server && npm run build --prefix client && esbuild server/src/app.ts --bundle --platform=node --format=esm --target=node20 --outfile=api/index.js --packages=external",
+    "build": "npm run build --prefix server && npm run build --prefix client && esbuild server/src/vercel.ts --bundle --platform=node --format=esm --target=node20 --outfile=api/index.js --external:pg-native --external:pg",
     "vercel-build": "npm run install:all && npm run build"
   },
   "dependencies": {

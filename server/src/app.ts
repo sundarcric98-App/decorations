@@ -71,8 +71,8 @@ if (process.env.NODE_ENV !== 'test') {
 const uploadDir = path.resolve(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadDir));
 
-// Health Checks
-app.get(['/health', '/api/health'], (req: Request, res: Response) => {
+// Health Checks & Base Ping
+app.get(['/health', '/api/health', '/api', '/api/index'], (req: Request, res: Response) => {
   return apiSuccess(
     res,
     {
@@ -108,6 +108,7 @@ apiV1.use('/settings', settingsRoutes);
 apiV1.use('/uploads', uploadsRoutes);
 
 app.use('/api/v1', apiV1);
+app.use('/v1', apiV1);
 
 // 404 Route Handler
 app.use((req: Request, res: Response) => {
