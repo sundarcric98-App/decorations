@@ -3,14 +3,17 @@
   "version": "1.0.0",
   "description": "Sathuragiri Decoration - Event Decoration, Wedding Planning & Event Services Management Web Application",
   "scripts": {
-    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "install:all": "npm install --include=dev && npm install --prefix server --include=dev && npm install --prefix client --include=dev",
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,magenta\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "build": "npm run build --prefix server && npm run build --prefix client",
-    "db:push": "npm run prisma:push --prefix server",
+    "vercel-build": "npm run install:all && npm run build",
     "db:seed": "npm run db:seed --prefix server",
-    "db:setup": "npm run prisma:push --prefix server && npm run db:seed --prefix server"
+    "db:setup": "npm run db:seed --prefix server"
+  },
+  "dependencies": {
+    "typescript": "^5.7.3"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
