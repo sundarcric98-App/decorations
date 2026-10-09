@@ -1,0 +1,429 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String          @id @default(uuid())
+  email              String          @unique
+  passwordHash       String
+  name               String
+  phone              String?
+  role               String          @default("STAFF") // OWNER, MANAGER, STAFF
+  isActive           Boolean         @default(true)
+  resetToken         String?
+  resetTokenExpires  DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  enquiryNotes       EnquiryNote[]
+  staffProfile       StaffProfile?
+  paymentsRecorded   Payment[]
+  expensesRecorded   Expense[]
+  auditLogs          AuditLog[]
+
+  @@index([email])
+}
+
+model Customer {
+  id          String       @id @default(uuid())
+  name        String
+  phone       String       @unique
+  email       String?
+  address     String?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  enquiries   Enquiry[]
+  bookings    Booking[]
+  quotations  Quotation[]
+  payments    Payment[]
+
+  @@index([phone])
+  @@index([name])
+}
+
+model ServiceCategory {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  slug        String      @unique
+  description String?
+  image       String?
+  sortOrder   Int         @default(0)
+  isActive    Boolean     @default(true)
+  services    Service[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([slug])
+}
+
+model Service {
+  id               String            @id @default(uuid())
+  categoryId       String
+  category         ServiceCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name             String
+  slug             String            @unique
+  shortDesc        String
+  detailedDesc     String?
+  coverImage       String
+  images           String?           // JSON array of image URLs
+  startingPrice    Float?
+  pricingMethod    String            @default("Starting price") // Fixed price, Starting price, Per person, Per day, Custom quotation
+  availableAddons  String?           // JSON array of add-on strings
+  isFeatured       Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  sortOrder        Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  bookingServices  BookingService[]
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([isFeatured])
+}
+
+model Package {
+  id               String      @id @default(uuid())
+  name             String
+  slug             String      @unique
+  description      String
+  includedServices String      // JSON array of service names or descriptions
+  packagePrice     Float?
+  pricingType      String      @default("Starting price") // Fixed price, Starting price, Request a Quote
+  optionalExtras   String?     // JSON array of extra strings
+  terms            String?
+  isActive         Boolean     @default(true)
+  isFeatured       Boolean     @default(false)
+  sortOrder        Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([slug])
+}
+
+model PortfolioProject {
+  id          String      @id @default(uuid())
+  title       String
+  slug        String      @unique
+  category    String      // e.g. Traditional Wedding, Reception, Engagement, Haldi, Corporate
+  description String
+  clientName  String?
+  location    String?
+  eventDate   DateTime?
+  coverImage  String
+  images      String?     // JSON array of strings
+  isFeatured  Boolean     @default(false)
+  isPublished Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([isFeatured])
+}
+
+model Enquiry {
+  id                     String         @id @default(uuid())
+  reference              String         @unique // ENQ-2026-0001
+  customerId             String
+  customer               Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  eventType              String         // Wedding, Reception, Engagement, Birthday, Corporate, Photo Shoot, Catering, Other
+  eventTitle             String?
+  eventDate              DateTime
+  endDate                DateTime?
+  venueName              String?
+  venueAddress           String?
+  venueCity              String?
+  guestCount             Int?
+  isOutdoor              Boolean        @default(false)
+  selectedServiceIds     String?        // JSON array of service IDs or names
+  selectedPackageId      String?
+  customRequirements     String?
+  inspirationImages      String?        // JSON array of image URLs
+  budgetRange            String?        // e.g. "₹50,000 - ₹1,00,000", "₹1,00,000 - ₹2,50,000", "₹2,50,000 - ₹5,00,000", "₹5,00,000+"
+  preferredContactMethod String         @default("Phone") // Phone, WhatsApp, Email
+  consultationTime       String?        // Morning, Afternoon, Evening, Weekend
+  additionalNotes        String?
+  status                 String         @default("NEW") // NEW, CONTACTED, CONSULTATION_SCHEDULED, QUOTATION_SENT, NEGOTIATION, CONVERTED, LOST, ARCHIVED
+  assignedToUserId       String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  notes                  EnquiryNote[]
+  bookings               Booking[]
+  quotations             Quotation[]
+
+  @@index([reference])
+  @@index([status])
+  @@index([eventDate])
+  @@index([customerId])
+}
+
+model EnquiryNote {
+  id           String    @id @default(uuid())
+  enquiryId    String
+  enquiry      Enquiry   @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  note         String
+  followUpDate DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([enquiryId])
+}
+
+model Booking {
+  id                 String               @id @default(uuid())
+  reference          String               @unique // BKG-2026-0001
+  customerId         String
+  customer           Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  enquiryId          String?
+  enquiry            Enquiry?             @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+  eventName          String
+  eventType          String
+  startDate          DateTime
+  endDate            DateTime?
+  venueName          String?
+  venueAddress       String?
+  venueCity          String?
+  guestCount         Int?
+  status             String               @default("CONFIRMED") // DRAFT, TENTATIVE, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+  totalAmount        Float                @default(0)
+  discountAmount     Float                @default(0)
+  taxAmount          Float                @default(0)
+  finalAmount        Float                @default(0)
+  internalNotes      String?
+  termsAndConditions String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  services           BookingService[]
+  assignments        BookingAssignment[]
+  quotations         Quotation[]
+  payments           Payment[]
+  expenses           Expense[]
+
+  @@index([reference])
+  @@index([status])
+  @@index([startDate])
+  @@index([customerId])
+}
+
+model BookingService {
+  id          String   @id @default(uuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  serviceName String
+  quantity    Int      @default(1)
+  unitPrice   Float    @default(0)
+  notes       String?
+
+  @@index([bookingId])
+}
+
+model BookingAssignment {
+  id         String        @id @default(uuid())
+  bookingId  String
+  booking    Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  staffId    String?
+  staff      StaffProfile? @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  vendorId   String?
+  vendor     Vendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  role       String        // e.g. Lead Decorator, Stage Lighting Tech, Head Chef, Drone Pilot
+  notes      String?
+  assignedAt DateTime      @default(now())
+
+  @@index([bookingId])
+  @@index([staffId])
+  @@index([vendorId])
+}
+
+model StaffProfile {
+  id                 String              @id @default(uuid())
+  userId             String?             @unique
+  user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name               String
+  phone              String
+  email              String?
+  roleTitle          String              // Senior Decorator, Lighting Supervisor, Event Coordinator, Floral Stylist
+  skills             String?             // Comma-separated or description
+  availabilityStatus String              @default("AVAILABLE") // AVAILABLE, ON_LEAVE, BUSY
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  assignments        BookingAssignment[]
+
+  @@index([name])
+}
+
+model Vendor {
+  id               String              @id @default(uuid())
+  businessName     String
+  contactPerson    String
+  phone            String
+  email            String?
+  category         String              // Flowers, Catering, Sound & Light, Photography, Furniture Rental, Tent & Shamiana
+  servicesSupplied String?
+  agreedRates      String?             // Internal notes on commercial terms
+  notes            String?
+  isActive         Boolean             @default(true)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  assignments      BookingAssignment[]
+  expenses         Expense[]
+
+  @@index([businessName])
+  @@index([category])
+}
+
+model Quotation {
+  id              String          @id @default(uuid())
+  quotationNumber String          @unique // QTN-2026-0001
+  version         Int             @default(1)
+  customerId      String
+  customer        Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  bookingId       String?
+  booking         Booking?        @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  enquiryId       String?
+  enquiry         Enquiry?        @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+  validUntil      DateTime
+  subtotal        Float           @default(0)
+  discount        Float           @default(0)
+  taxRate         Float           @default(0) // Percentage, e.g. 18% GST
+  taxAmount       Float           @default(0)
+  grandTotal      Float           @default(0)
+  terms           String?
+  exclusions      String?
+  paymentSchedule String?
+  status          String          @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  items           QuotationItem[]
+
+  @@index([quotationNumber])
+  @@index([status])
+  @@index([customerId])
+}
+
+model QuotationItem {
+  id          String    @id @default(uuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  serviceId   String?
+  name        String
+  description String?
+  quantity    Float     @default(1)
+  unit        String    @default("Set") // Set, Sq.Ft, Plate, Hour, Day, Package
+  unitPrice   Float     @default(0)
+  discount    Float     @default(0)
+  total       Float     @default(0)
+
+  @@index([quotationId])
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  receiptNumber    String   @unique // RCT-2026-0001
+  bookingId        String
+  booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerId       String
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  amount           Float
+  paymentMethod    String   @default("UPI") // CASH, BANK_TRANSFER, UPI, CARD, OTHER
+  paymentType      String   @default("ADVANCE") // ADVANCE, PARTIAL, FINAL_SETTLEMENT, REFUND
+  reference        String?  // Transaction ID or Cheque No
+  paymentDate      DateTime @default(now())
+  notes            String?
+  status           String   @default("PAID") // PAID, PENDING, REFUNDED
+  recordedByUserId String?
+  recordedBy       User?    @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([receiptNumber])
+  @@index([bookingId])
+  @@index([customerId])
+}
+
+model Expense {
+  id               String   @id @default(uuid())
+  category         String   // DECORATION_MATERIALS, FLOWERS, LIGHTING_SOUND, LABOUR, PHOTOGRAPHY, CATERING, TRANSPORTATION, STALL_SETUP, EQUIPMENT_RENTAL, OTHER
+  description      String
+  amount           Float
+  expenseDate      DateTime @default(now())
+  bookingId        String?
+  booking          Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  vendorId         String?
+  vendor           Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  paymentMethod    String   @default("CASH") // CASH, UPI, BANK_TRANSFER, OTHER
+  receiptUrl       String?
+  recordedByUserId String?
+  recordedBy       User?    @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([category])
+  @@index([expenseDate])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String   @default("ENQUIRY") // ENQUIRY, BOOKING, PAYMENT, FOLLOWUP, SYSTEM
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // CREATE, UPDATE, DELETE, CONVERT, LOGIN, LOGOUT
+  entity    String   // ENQUIRY, BOOKING, QUOTATION, PAYMENT, EXPENSE, USER
+  entityId  String?
+  details   String?  // JSON string
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([entity])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model BusinessSettings {
+  id                       String   @id @default("default-settings")
+  businessName             String   @default("Sathuragiri Decoration")
+  tagline                  String   @default("Every Celebration, Beautifully Crafted.")
+  logoUrl                  String?
+  phone                    String   @default("+91 98765 43210")
+  alternatePhone           String?  @default("+91 98765 01234")
+  whatsappNumber           String   @default("+919876543210")
+  email                    String   @default("contact@sathuragiridecoration.com")
+  address                  String   @default("142, Temple View Road, Madurai")
+  city                     String   @default("Madurai")
+  state                    String   @default("Tamil Nadu")
+  pincode                  String   @default("625001")
+  mapsEmbedUrl             String?  @default("https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125747.88722421375!2d78.04169722883301!3d9.92520074218841!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b00c582b1189633%3A0xdc955b7264f63933!2sMadurai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin")
+  primaryGold              String   @default("#B8955A")
+  gstNumber                String?  @default("33AAAAA0000A1Z5")
+  advancePercentageDefault Int      @default(30)
+  currencySymbol           String   @default("₹")
+  termsDefault             String?  @default("1. 30% advance required to confirm booking.\n2. 50% payable 2 days prior to the event.\n3. 20% balance payable on event completion.\n4. Decoration changes must be requested at least 7 days before event.")
+  socialInstagram          String?  @default("https://instagram.com/sathuragiridecoration")
+  socialFacebook           String?  @default("https://facebook.com/sathuragiridecoration")
+  socialYoutube            String?  @default("https://youtube.com/@sathuragiridecoration")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}

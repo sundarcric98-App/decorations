@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-gold: #B8955A;
+    --brand-ivory: #FAF7F2;
+    --brand-charcoal: #24211F;
+  }
+
+  body {
+    background-color: #FAF7F2;
+    color: #24211F;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, .font-serif-title {
+    font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF7F2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DEC699;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B8955A;
+}
+
+/* Gold Gradient utilities */
+.gold-gradient-text {
+  background: linear-gradient(135deg, #CEA96E 0%, #B8955A 50%, #96743A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-gradient-bg {
+  background: linear-gradient(135deg, #D4B77D 0%, #B8955A 50%, #96743A 100%);
+}
+
+.gold-border-glow {
+  border: 1px solid rgba(184, 149, 90, 0.4);
+  box-shadow: 0 0 15px rgba(184, 149, 90, 0.15);
+}
+
+.gold-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gold-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -10px rgba(184, 149, 90, 0.2);
+  border-color: rgba(184, 149, 90, 0.6);
+}
+
+/* Print styles for quotations and receipts */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
