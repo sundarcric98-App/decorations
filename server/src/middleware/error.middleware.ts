@@ -25,9 +25,7 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
 
   // Standard Express/HTTP errors
   const statusCode = err.statusCode || 500;
-  const message = process.env.NODE_ENV === 'production' && statusCode === 500
-    ? 'Internal server error occurred.'
-    : err.message || 'An unexpected error occurred.';
+  const message = err.message || 'An unexpected error occurred.';
 
   return apiError(res, message, statusCode);
 };
