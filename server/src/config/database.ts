@@ -6,6 +6,10 @@ dotenv.config();
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres';
 const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
 
+if (!process.env.DATABASE_URL) {
+  console.warn('⚠️ Warning: DATABASE_URL is not set in environment variables. Defaulting to local connection.');
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var __pgPool: Pool | undefined;

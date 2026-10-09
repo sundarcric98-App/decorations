@@ -82394,6 +82394,9 @@ var import_dotenv = __toESM(require_main(), 1);
 import_dotenv.default.config();
 var connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres";
 var isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+if (!process.env.DATABASE_URL) {
+  console.warn("\u26A0\uFE0F Warning: DATABASE_URL is not set in environment variables. Defaulting to local connection.");
+}
 var pool = global.__pgPool || new esm_default.Pool({
   connectionString,
   ssl: isLocal ? false : { rejectUnauthorized: false },
