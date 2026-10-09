@@ -1,5 +1,5 @@
 import app from './app.js';
-import { prisma } from './config/database.js';
+import { pool } from './config/database.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -18,8 +18,8 @@ const shutdown = async (signal: string) => {
   console.log(`\nReceived ${signal}. Shutting down gracefully...`);
   server.close(async () => {
     console.log('HTTP Server closed.');
-    await prisma.$disconnect();
-    console.log('Prisma disconnected.');
+    await pool.end();
+    console.log('PostgreSQL pool disconnected.');
     process.exit(0);
   });
 

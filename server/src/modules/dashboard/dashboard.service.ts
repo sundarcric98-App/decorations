@@ -1,88 +1,85 @@
-import { prisma } from '../../config/database.js';
+import { query, queryOne } from '../../config/database.js';
 
 export class DashboardService {
   static async getStats() {
     const now = new Date();
 
-    // Counts
-    const totalEnquiries = await prisma.enquiry.count();
-    const newEnquiries = await prisma.enquiry.count({ where: { status: 'NEW' } });
-    
-    const confirmedBookings = await prisma.booking.count({
-      where: { status: { in: ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] } },
-    });
+    const [
+      totalEnquiriesRes,
+      newEnquiriesRes,
+      confirmedBookingsRes,
+      upcomingEventsRes,
+      payments,
+      bookings,
+      expenses,
+      recentEnquiries,
+      upcomingBookingsList,
+      recentPayments,
+      bookingStatuses,
+      enquiryStatuses,
+    ] = await Promise.all([
+      queryOne<{ count: number }>(`SELECT COUNT(*)::int AS count FROM "Enquiry"`),
+      queryOne<{ count: number }>(`SELECT COUNT(*)::int AS count FROM "Enquiry" WHERE "status" = 'NEW'`),
+      queryOne<{ count: number }>(
+        `SELECT COUNT(*)::int AS count FROM "Booking" WHERE "status" IN ('CONFIRMED', 'IN_PROGRESS', 'COMPLETED')`
+      ),
+      queryOne<{ count: number }>(
+        `SELECT COUNT(*)::int AS count FROM "Booking" WHERE "startDate" >= NOW() AND "status" IN ('CONFIRMED', 'IN_PROGRESS', 'TENTATIVE')`
+      ),
+      query<{ amount: number; paymentType: string }>(
+        `SELECT "amount", "paymentType" FROM "Payment" WHERE "status" = 'PAID'`
+      ),
+      query<{ finalAmount: number }>(
+        `SELECT "finalAmount" FROM "Booking" WHERE "status" IN ('CONFIRMED', 'IN_PROGRESS', 'COMPLETED')`
+      ),
+      query<{ amount: number }>(`SELECT "amount" FROM "Expense"`),
+      query<any>(
+        `SELECT e.*, json_build_object('name', c."name", 'phone', c."phone") AS customer
+         FROM "Enquiry" e
+         LEFT JOIN "Customer" c ON c."id" = e."customerId"
+         ORDER BY e."createdAt" DESC
+         LIMIT 5`
+      ),
+      query<any>(
+        `SELECT b.*, json_build_object('name', c."name", 'phone', c."phone") AS customer
+         FROM "Booking" b
+         LEFT JOIN "Customer" c ON c."id" = b."customerId"
+         WHERE b."startDate" >= (NOW() - INTERVAL '1 day')
+         ORDER BY b."startDate" ASC
+         LIMIT 5`
+      ),
+      query<any>(
+        `SELECT p.*,
+           json_build_object('name', c."name") AS customer,
+           json_build_object('reference', b."reference", 'eventName', b."eventName") AS booking
+         FROM "Payment" p
+         LEFT JOIN "Customer" c ON c."id" = p."customerId"
+         LEFT JOIN "Booking" b ON b."id" = p."bookingId"
+         ORDER BY p."createdAt" DESC
+         LIMIT 5`
+      ),
+      query<{ status: string; count: number }>(
+        `SELECT "status", COUNT(*)::int AS count FROM "Booking" GROUP BY "status"`
+      ),
+      query<{ status: string; count: number }>(
+        `SELECT "status", COUNT(*)::int AS count FROM "Enquiry" GROUP BY "status"`
+      ),
+    ]);
 
-    const upcomingEvents = await prisma.booking.count({
-      where: {
-        startDate: { gte: now },
-        status: { in: ['CONFIRMED', 'IN_PROGRESS', 'TENTATIVE'] },
-      },
-    });
-
-    // Financial calculations
-    const payments = await prisma.payment.findMany({
-      where: { status: 'PAID' },
-      select: { amount: true, paymentType: true },
-    });
+    const totalEnquiries = totalEnquiriesRes?.count || 0;
+    const newEnquiries = newEnquiriesRes?.count || 0;
+    const confirmedBookings = confirmedBookingsRes?.count || 0;
+    const upcomingEvents = upcomingEventsRes?.count || 0;
 
     const totalRevenueReceived = payments.reduce((acc, curr) => {
-      if (curr.paymentType === 'REFUND') return acc - curr.amount;
-      return acc + curr.amount;
+      if (curr.paymentType === 'REFUND') return acc - Number(curr.amount);
+      return acc + Number(curr.amount);
     }, 0);
 
-    const bookings = await prisma.booking.findMany({
-      where: { status: { in: ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] } },
-      select: { finalAmount: true },
-    });
-
-    const totalBookingValue = bookings.reduce((acc, curr) => acc + curr.finalAmount, 0);
+    const totalBookingValue = bookings.reduce((acc, curr) => acc + Number(curr.finalAmount), 0);
     const outstandingBalance = Math.max(0, totalBookingValue - totalRevenueReceived);
 
-    const expenses = await prisma.expense.findMany({
-      select: { amount: true },
-    });
-    const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
-
-    // Recent items
-    const recentEnquiries = await prisma.enquiry.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        customer: { select: { name: true, phone: true } },
-      },
-    });
-
-    const upcomingBookingsList = await prisma.booking.findMany({
-      where: {
-        startDate: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) }, // from today onwards
-      },
-      take: 5,
-      orderBy: { startDate: 'asc' },
-      include: {
-        customer: { select: { name: true, phone: true } },
-      },
-    });
-
-    const recentPayments = await prisma.payment.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        customer: { select: { name: true } },
-        booking: { select: { reference: true, eventName: true } },
-      },
-    });
-
-    // Booking Status Distribution
-    const bookingStatuses = await prisma.booking.groupBy({
-      by: ['status'],
-      _count: { status: true },
-    });
-
-    // Enquiry Status Distribution
-    const enquiryStatuses = await prisma.enquiry.groupBy({
-      by: ['status'],
-      _count: { status: true },
-    });
+    const totalExpenses = expenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
 
     // 6-Month Monthly Trend
     const monthlyTrends = [
@@ -91,7 +88,12 @@ export class DashboardService {
       { month: 'Jul', bookings: 5, revenue: 410000, expenses: 180000 },
       { month: 'Aug', bookings: 9, revenue: 780000, expenses: 310000 },
       { month: 'Sep', bookings: 12, revenue: 1050000, expenses: 430000 },
-      { month: 'Oct', bookings: confirmedBookings || 8, revenue: totalRevenueReceived || 680000, expenses: totalExpenses || 260000 },
+      {
+        month: 'Oct',
+        bookings: confirmedBookings || 8,
+        revenue: totalRevenueReceived || 680000,
+        expenses: totalExpenses || 260000,
+      },
     ];
 
     return {
@@ -107,8 +109,8 @@ export class DashboardService {
         estimatedProfit: Math.max(0, totalRevenueReceived - totalExpenses),
       },
       monthlyTrends,
-      bookingStatuses: bookingStatuses.map((b) => ({ status: b.status, count: b._count.status })),
-      enquiryStatuses: enquiryStatuses.map((e) => ({ status: e.status, count: e._count.status })),
+      bookingStatuses: bookingStatuses.map((b) => ({ status: b.status, count: Number(b.count) || 0 })),
+      enquiryStatuses: enquiryStatuses.map((e) => ({ status: e.status, count: Number(e.count) || 0 })),
       recentEnquiries,
       upcomingBookingsList,
       recentPayments,

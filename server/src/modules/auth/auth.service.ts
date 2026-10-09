@@ -1,13 +1,17 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { prisma } from '../../config/database.js';
+import { db } from '../../config/database.js';
 
 export class AuthService {
   static async login(email: string, password: string) {
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    const user = await db.queryOne(
+      `SELECT id, email, "passwordHash", name, phone, role, "isActive"
+       FROM "User"
+       WHERE LOWER(email) = LOWER($1)
+       LIMIT 1`,
+      [email.trim()]
+    );
 
     if (!user || !user.isActive) {
       const err: any = new Error('Invalid email or password.');
@@ -37,15 +41,11 @@ export class AuthService {
     );
 
     // Record audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'LOGIN',
-        entity: 'USER',
-        entityId: user.id,
-        details: JSON.stringify({ email: user.email, role: user.role }),
-      },
-    }).catch(() => {});
+    await db.query(
+      `INSERT INTO "AuditLog" ("userId", action, entity, "entityId", details)
+       VALUES ($1, 'LOGIN', 'USER', $2, $3)`,
+      [user.id, user.id, JSON.stringify({ email: user.email, role: user.role })]
+    ).catch(() => {});
 
     return {
       user: {
@@ -60,27 +60,25 @@ export class AuthService {
   }
 
   static async forgotPassword(email: string) {
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    const user = await db.queryOne(
+      `SELECT id, email FROM "User" WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+      [email.trim()]
+    );
 
     if (!user) {
-      // Return success simulation for security
       return { message: 'If this email is registered, password reset instructions have been dispatched.' };
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetExpires = new Date(Date.now() + 3600000); // 1 hour
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        resetToken,
-        resetTokenExpires: resetExpires,
-      },
-    });
+    await db.query(
+      `UPDATE "User"
+       SET "resetToken" = $1, "resetTokenExpires" = $2
+       WHERE id = $3`,
+      [resetToken, resetExpires, user.id]
+    );
 
-    // In production, an email would be sent. For local development, log to console:
     console.log(`🔑 Password Reset Token for ${user.email}: ${resetToken}`);
 
     return {
@@ -90,12 +88,12 @@ export class AuthService {
   }
 
   static async resetPassword(token: string, newPass: string) {
-    const user = await prisma.user.findFirst({
-      where: {
-        resetToken: token,
-        resetTokenExpires: { gt: new Date() },
-      },
-    });
+    const user = await db.queryOne(
+      `SELECT id FROM "User"
+       WHERE "resetToken" = $1 AND "resetTokenExpires" > NOW()
+       LIMIT 1`,
+      [token]
+    );
 
     if (!user) {
       throw new Error('Reset token is invalid or has expired.');
@@ -104,31 +102,24 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(newPass, salt);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        resetToken: null,
-        resetTokenExpires: null,
-      },
-    });
+    await db.query(
+      `UPDATE "User"
+       SET "passwordHash" = $1, "resetToken" = NULL, "resetTokenExpires" = NULL
+       WHERE id = $2`,
+      [passwordHash, user.id]
+    );
 
     return { message: 'Password has been successfully updated. You can now log in.' };
   }
 
   static async getProfile(userId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-      },
-    });
+    const user = await db.queryOne(
+      `SELECT id, email, name, phone, role, "isActive", "createdAt"
+       FROM "User"
+       WHERE id = $1
+       LIMIT 1`,
+      [userId]
+    );
 
     if (!user) {
       throw new Error('User not found.');

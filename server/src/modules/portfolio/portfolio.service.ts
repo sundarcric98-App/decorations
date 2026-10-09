@@ -1,4 +1,4 @@
-import { prisma } from '../../config/database.js';
+import { db } from '../../config/database.js';
 
 export class PortfolioService {
   static async getAllProjects(params?: {
@@ -9,33 +9,50 @@ export class PortfolioService {
   }) {
     const { category, featured, search, onlyPublished = true } = params || {};
 
-    const where: any = {};
-    if (onlyPublished) where.isPublished = true;
-    if (category && category !== 'All') where.category = category;
-    if (featured !== undefined) where.isFeatured = featured;
-    if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { location: { contains: search } },
-      ];
+    const whereClauses: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (onlyPublished) {
+      whereClauses.push(`"isPublished" = TRUE`);
     }
 
-    const projects = await prisma.portfolioProject.findMany({
-      where,
-      orderBy: [{ sortOrder: 'asc' }, { eventDate: 'desc' }, { createdAt: 'desc' }],
-    });
+    if (category && category !== 'All') {
+      whereClauses.push(`category = $${idx++}`);
+      values.push(category);
+    }
 
-    return projects.map((p: any) => ({
+    if (featured !== undefined) {
+      whereClauses.push(`"isFeatured" = $${idx++}`);
+      values.push(featured);
+    }
+
+    if (search) {
+      whereClauses.push(`(title ILIKE $${idx} OR description ILIKE $${idx} OR location ILIKE $${idx})`);
+      values.push(`%${search}%`);
+      idx++;
+    }
+
+    const whereStr = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const projects = await db.query(
+      `SELECT * FROM "PortfolioProject"
+       ${whereStr}
+       ORDER BY "sortOrder" ASC, "eventDate" DESC NULLS LAST, "createdAt" DESC`,
+      values
+    );
+
+    return projects.map((p) => ({
       ...p,
-      images: p.images ? JSON.parse(p.images) : [],
+      images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images || [],
     }));
   }
 
   static async getProjectBySlug(slug: string) {
-    const project = await prisma.portfolioProject.findUnique({
-      where: { slug },
-    });
+    const project = await db.queryOne(
+      `SELECT * FROM "PortfolioProject" WHERE slug = $1 LIMIT 1`,
+      [slug]
+    );
 
     if (!project) {
       throw new Error('Project not found');
@@ -43,34 +60,89 @@ export class PortfolioService {
 
     return {
       ...project,
-      images: project.images ? JSON.parse(project.images) : [],
+      images: typeof project.images === 'string' ? JSON.parse(project.images) : project.images || [],
     };
   }
 
   static async createProject(data: any) {
-    const { images, eventDate, ...rest } = data;
-    return prisma.portfolioProject.create({
-      data: {
-        ...rest,
-        eventDate: eventDate ? new Date(eventDate) : null,
-        images: images ? JSON.stringify(images) : null,
-      },
-    });
+    const {
+      title,
+      slug,
+      category,
+      description,
+      clientName,
+      location,
+      eventDate,
+      coverImage,
+      images,
+      isFeatured = false,
+      isPublished = true,
+      sortOrder = 0,
+    } = data;
+
+    const project = await db.queryOne(
+      `INSERT INTO "PortfolioProject" (
+        title, slug, category, description, "clientName", location,
+        "eventDate", "coverImage", images, "isFeatured", "isPublished", "sortOrder"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *`,
+      [
+        title,
+        slug,
+        category,
+        description,
+        clientName || null,
+        location || null,
+        eventDate ? new Date(eventDate) : null,
+        coverImage,
+        images ? JSON.stringify(images) : null,
+        Boolean(isFeatured),
+        Boolean(isPublished),
+        Number(sortOrder) || 0,
+      ]
+    );
+
+    return project;
   }
 
   static async updateProject(id: string, data: any) {
-    const { images, eventDate, ...rest } = data;
-    const updateData: any = { ...rest };
-    if (images !== undefined) updateData.images = JSON.stringify(images);
-    if (eventDate !== undefined) updateData.eventDate = eventDate ? new Date(eventDate) : null;
+    const fields: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
 
-    return prisma.portfolioProject.update({
-      where: { id },
-      data: updateData,
-    });
+    const allowed = ['title', 'slug', 'category', 'description', 'clientName', 'location', 'coverImage', 'isFeatured', 'isPublished', 'sortOrder'];
+    for (const key of allowed) {
+      if (data[key] !== undefined) {
+        fields.push(`"${key}" = $${idx++}`);
+        values.push(data[key]);
+      }
+    }
+
+    if (data.eventDate !== undefined) {
+      fields.push(`"eventDate" = $${idx++}`);
+      values.push(data.eventDate ? new Date(data.eventDate) : null);
+    }
+
+    if (data.images !== undefined) {
+      fields.push(`images = $${idx++}`);
+      values.push(data.images ? JSON.stringify(data.images) : null);
+    }
+
+    if (fields.length === 0) {
+      return db.queryOne(`SELECT * FROM "PortfolioProject" WHERE id = $1`, [id]);
+    }
+
+    values.push(id);
+    return db.queryOne(
+      `UPDATE "PortfolioProject"
+       SET ${fields.join(', ')}
+       WHERE id = $${idx}
+       RETURNING *`,
+      values
+    );
   }
 
   static async deleteProject(id: string) {
-    return prisma.portfolioProject.delete({ where: { id } });
+    return db.queryOne(`DELETE FROM "PortfolioProject" WHERE id = $1 RETURNING *`, [id]);
   }
 }

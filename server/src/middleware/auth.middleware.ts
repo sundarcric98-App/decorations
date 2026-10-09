@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../config/database.js';
+import { queryOne } from '../config/database.js';
 import { apiError } from '../utils/response.js';
 
 export interface AuthRequest extends Request {
@@ -27,10 +27,10 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const secret = process.env.JWT_SECRET || 'sathuragiri_super_secret_jwt_key_2026_luxury_events_decor';
     const decoded = jwt.verify(token, secret) as { id: string; email: string; role: string; name: string };
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, email: true, role: true, name: true, isActive: true },
-    });
+    const user = await queryOne<any>(
+      `SELECT "id", "email", "role", "name", "isActive" FROM "User" WHERE "id" = $1 LIMIT 1`,
+      [decoded.id]
+    );
 
     if (!user || !user.isActive) {
       return apiError(res, 'Invalid session or account deactivated.', 401);

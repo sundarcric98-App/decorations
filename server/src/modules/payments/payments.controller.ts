@@ -3,7 +3,7 @@ import { PaymentsService } from './payments.service.js';
 import { createPaymentSchema } from './payments.schema.js';
 import { apiSuccess } from '../../utils/response.js';
 import { PdfGenerator } from '../../utils/pdf.js';
-import { prisma } from '../../config/database.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { AuthRequest } from '../../middleware/auth.middleware.js';
 
 export class PaymentsController {
@@ -46,7 +46,7 @@ export class PaymentsController {
   static async downloadReceiptPdf(req: Request, res: Response, next: NextFunction) {
     try {
       const payment = await PaymentsService.getPaymentById(req.params.id);
-      const settings = await prisma.businessSettings.findFirst();
+      const settings = await SettingsService.getSettings();
       const pdfBuffer = PdfGenerator.generateReceiptPdf(payment, settings);
 
       res.setHeader('Content-Type', 'application/pdf');

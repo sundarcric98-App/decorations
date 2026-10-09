@@ -1,14 +1,16 @@
-import { prisma } from '../../config/database.js';
+import { query, queryOne } from '../../config/database.js';
 
 export class NotificationsService {
   static async getNotifications(limit = 30) {
-    const [unreadCount, notifications] = await Promise.all([
-      prisma.notification.count({ where: { isRead: false } }),
-      prisma.notification.findMany({
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-    ]);
+    const unreadRes = await queryOne<{ count: number }>(
+      `SELECT COUNT(*)::int AS count FROM "Notification" WHERE "isRead" = false`
+    );
+    const unreadCount = unreadRes?.count || 0;
+
+    const notifications = await query<any>(
+      `SELECT * FROM "Notification" ORDER BY "createdAt" DESC LIMIT $1`,
+      [limit]
+    );
 
     return {
       unreadCount,
@@ -17,16 +19,17 @@ export class NotificationsService {
   }
 
   static async markAsRead(id: string) {
-    return prisma.notification.update({
-      where: { id },
-      data: { isRead: true },
-    });
+    const updated = await queryOne<any>(
+      `UPDATE "Notification" SET "isRead" = true WHERE "id" = $1 RETURNING *`,
+      [id]
+    );
+    return updated;
   }
 
   static async markAllAsRead() {
-    return prisma.notification.updateMany({
-      where: { isRead: false },
-      data: { isRead: true },
-    });
+    const updated = await query<any>(
+      `UPDATE "Notification" SET "isRead" = true WHERE "isRead" = false RETURNING *`
+    );
+    return { count: updated.length };
   }
 }

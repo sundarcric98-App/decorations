@@ -13,14 +13,14 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
     return apiError(res, 'Validation failed', 400, formattedErrors);
   }
 
-  // Prisma unique constraint or foreign key violations
-  if (err.code === 'P2002') {
-    const target = (err.meta?.target as string[]) || ['field'];
-    return apiError(res, `A record with this ${target.join(', ')} already exists.`, 409);
+  // Postgres unique constraint violations (23505) or foreign key violations (23503)
+  if (err.code === '23505') {
+    const detail = err.detail || 'A record with this value already exists.';
+    return apiError(res, detail, 409);
   }
 
-  if (err.code === 'P2025') {
-    return apiError(res, 'Requested record was not found.', 404);
+  if (err.code === '23503') {
+    return apiError(res, 'Referenced record does not exist or is currently in use.', 400);
   }
 
   // Standard Express/HTTP errors

@@ -3,7 +3,7 @@ import { QuotationsService } from './quotations.service.js';
 import { createQuotationSchema, updateQuotationSchema } from './quotations.schema.js';
 import { apiSuccess } from '../../utils/response.js';
 import { PdfGenerator } from '../../utils/pdf.js';
-import { prisma } from '../../config/database.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { AuthRequest } from '../../middleware/auth.middleware.js';
 
 export class QuotationsController {
@@ -55,7 +55,7 @@ export class QuotationsController {
   static async downloadPdf(req: Request, res: Response, next: NextFunction) {
     try {
       const quotation = await QuotationsService.getQuotationById(req.params.id);
-      const settings = await prisma.businessSettings.findFirst();
+      const settings = await SettingsService.getSettings();
       const pdfBuffer = PdfGenerator.generateQuotationPdf(quotation, settings);
 
       res.setHeader('Content-Type', 'application/pdf');
