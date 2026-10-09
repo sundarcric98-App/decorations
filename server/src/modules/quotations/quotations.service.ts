@@ -38,7 +38,7 @@ export class QuotationsService {
 
     const quotationNumber = await this.generateQuotationNumber();
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const quotation = await tx.quotation.create({
         data: {
           ...rest,
@@ -172,7 +172,7 @@ export class QuotationsService {
     const currentTaxRate = taxRate !== undefined ? Number(taxRate) : existing.taxRate;
     const currentDiscount = overallDiscount !== undefined ? Number(overallDiscount) : existing.discount;
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       let calculatedSubtotal = existing.subtotal;
 
       if (items && Array.isArray(items)) {

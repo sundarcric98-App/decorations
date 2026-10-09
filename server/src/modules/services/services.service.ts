@@ -40,7 +40,7 @@ export class ServicesService {
       },
     });
 
-    return services.map((s) => ({
+    return services.map((s: any) => ({
       ...s,
       images: s.images ? JSON.parse(s.images) : [],
       availableAddons: s.availableAddons ? JSON.parse(s.availableAddons) : [],

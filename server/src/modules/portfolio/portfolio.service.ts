@@ -26,7 +26,7 @@ export class PortfolioService {
       orderBy: [{ sortOrder: 'asc' }, { eventDate: 'desc' }, { createdAt: 'desc' }],
     });
 
-    return projects.map((p) => ({
+    return projects.map((p: any) => ({
       ...p,
       images: p.images ? JSON.parse(p.images) : [],
     }));

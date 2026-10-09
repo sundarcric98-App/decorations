@@ -57,29 +57,29 @@ export class ReportsService {
     ]);
 
     const totalRevenue = payments.reduce(
-      (sum, p) => (p.paymentType === 'REFUND' ? sum - p.amount : sum + p.amount),
+      (sum: number, p: any) => (p.paymentType === 'REFUND' ? sum - p.amount : sum + p.amount),
       0
     );
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpenses = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
     const netProfit = totalRevenue - totalExpenses;
     const conversionRate = totalEnquiries > 0 ? ((convertedEnquiries / totalEnquiries) * 100).toFixed(1) : '0';
 
     // Payment methods breakdown
-    const paymentMethods = payments.reduce((acc: Record<string, number>, p) => {
+    const paymentMethods = payments.reduce((acc: Record<string, number>, p: any) => {
       acc[p.paymentMethod] = (acc[p.paymentMethod] || 0) + p.amount;
       return acc;
     }, {});
 
     // Expense categories breakdown
-    const expenseCategories = expenses.reduce((acc: Record<string, number>, e) => {
+    const expenseCategories = expenses.reduce((acc: Record<string, number>, e: any) => {
       acc[e.category] = (acc[e.category] || 0) + e.amount;
       return acc;
     }, {});
 
     // Category Popularity
-    const categoryPopularity = serviceCategories.map((c) => ({
+    const categoryPopularity = serviceCategories.map((c: any) => ({
       name: c.name,
-      bookingsCount: c.services.reduce((sum, s) => sum + s._count.bookingServices, 0),
+      bookingsCount: c.services.reduce((sum: number, s: any) => sum + s._count.bookingServices, 0),
     }));
 
     return {
@@ -124,10 +124,10 @@ export class ReportsService {
       'Balance (INR)',
     ];
 
-    const rows = bookings.map((b) => {
+    const rows = bookings.map((b: any) => {
       const paid = b.payments
-        .filter((p) => p.status === 'PAID')
-        .reduce((sum, p) => (p.paymentType === 'REFUND' ? sum - p.amount : sum + p.amount), 0);
+        .filter((p: any) => p.status === 'PAID')
+        .reduce((sum: number, p: any) => (p.paymentType === 'REFUND' ? sum - p.amount : sum + p.amount), 0);
       const balance = Math.max(0, b.finalAmount - paid);
 
       return [
@@ -173,7 +173,7 @@ export class ReportsService {
       'Status',
     ];
 
-    const rows = payments.map((p) => [
+    const rows = payments.map((p: any) => [
       p.receiptNumber,
       p.paymentDate.toISOString().split('T')[0],
       p.customer.name,
@@ -210,7 +210,7 @@ export class ReportsService {
       'Vendor Name',
     ];
 
-    const rows = expenses.map((e) => [
+    const rows = expenses.map((e: any) => [
       e.id,
       e.expenseDate.toISOString().split('T')[0],
       e.category,

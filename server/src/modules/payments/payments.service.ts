@@ -10,7 +10,7 @@ export class PaymentsService {
   static async createPayment(data: any, userId?: string) {
     const receiptNumber = await this.generateReceiptNumber();
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const payment = await tx.payment.create({
         data: {
           ...data,
@@ -120,7 +120,7 @@ export class PaymentsService {
   }
 
   static async deletePayment(id: string, userId?: string) {
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const payment = await tx.payment.findUnique({ where: { id } });
       if (!payment) throw new Error('Payment not found');
 
