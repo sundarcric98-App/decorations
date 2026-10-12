@@ -333,22 +333,22 @@ CREATE POLICY "Public read storage images"
     USING (bucket_id = 'decoration-images');
 
 DROP POLICY IF EXISTS "Admins upload storage images" ON storage.objects;
-CREATE POLICY "Admins upload storage images"
+DROP POLICY IF EXISTS "Allow decoration-images uploads" ON storage.objects;
+CREATE POLICY "Allow decoration-images uploads"
     ON storage.objects FOR INSERT
-    TO authenticated
-    WITH CHECK (bucket_id = 'decoration-images' AND public.is_admin());
+    WITH CHECK (bucket_id = 'decoration-images');
 
 DROP POLICY IF EXISTS "Admins update storage images" ON storage.objects;
-CREATE POLICY "Admins update storage images"
+DROP POLICY IF EXISTS "Allow decoration-images updates" ON storage.objects;
+CREATE POLICY "Allow decoration-images updates"
     ON storage.objects FOR UPDATE
-    TO authenticated
-    USING (bucket_id = 'decoration-images' AND public.is_admin());
+    USING (bucket_id = 'decoration-images');
 
 DROP POLICY IF EXISTS "Admins delete storage images" ON storage.objects;
-CREATE POLICY "Admins delete storage images"
+DROP POLICY IF EXISTS "Allow decoration-images deletes" ON storage.objects;
+CREATE POLICY "Allow decoration-images deletes"
     ON storage.objects FOR DELETE
-    TO authenticated
-    USING (bucket_id = 'decoration-images' AND public.is_admin());
+    USING (bucket_id = 'decoration-images');
 
 -- ------------------------------------------------------------------------------
 -- 9. AUTH TRIGGER: Auto-create admin profile on Supabase auth.users signup/insert
