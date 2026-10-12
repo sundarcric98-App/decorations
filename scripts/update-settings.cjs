@@ -9,11 +9,11 @@ async function updateSettings() {
   });
 
   try {
+    const addressVal = 'Usilai Road, Peraiyur - 625703, Madurai District, Tamil Nadu';
     const settings = [
-      { key: 'whatsapp_number', val: '918903575802' },
-      { key: 'whatsapp_number_secondary', val: '919842322624' },
-      { key: 'phone', val: '+91 89035 75802, +91 98423 22624' },
-      { key: 'logo_url', val: '/Decoration_Logo.png' },
+      { key: 'address', val: addressVal },
+      { key: 'city', val: 'Peraiyur' },
+      { key: 'pincode', val: '625703' },
     ];
 
     for (const item of settings) {
@@ -28,7 +28,7 @@ async function updateSettings() {
       console.log(`Updated setting ${item.key} = ${item.val}`);
     }
 
-    console.log('✅ Settings updated in Supabase successfully!');
+    console.log('✅ Address updated in Supabase successfully!');
   } catch (err) {
     console.error('❌ Error updating settings:', err.message);
   } finally {

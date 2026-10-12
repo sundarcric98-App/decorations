@@ -6,6 +6,7 @@ import { WhatsAppButton } from './WhatsAppButton';
 import { Button } from './Button';
 import { useSettings } from '../../context/SettingsContext';
 import { useAuth } from '../../context/AuthContext';
+import decorationLogo from '../../assets/Decoration_Logo.png';
 
 export const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -42,13 +43,28 @@ export const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 overflow-hidden ${
         isScrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-[#E8E0D6] py-3'
-          : 'bg-[#FAF7F2]/95 backdrop-blur-sm py-4 md:py-5 border-b border-[#E8E0D6]/40'
+          ? 'bg-white/92 backdrop-blur-md shadow-md border-b border-[#B8955A]/30 py-2.5'
+          : 'bg-[#FAF7F2]/90 backdrop-blur-sm py-3.5 md:py-4 border-b border-[#B8955A]/25'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Clearly Visible Brand Logo Background Layer */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+        {/* Semi-transparent ambient background artwork centered */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-30">
+          <img
+            src={decorationLogo}
+            alt="Sathuragiri Logo Backdrop"
+            className="h-28 md:h-36 w-auto object-contain filter contrast-125 brightness-95"
+          />
+        </div>
+
+        {/* Soft edge gradients so background blends into navbar */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FAF7F2]/80 via-transparent to-[#FAF7F2]/80" />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Brand Logo */}
           <Logo />

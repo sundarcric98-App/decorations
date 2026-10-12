@@ -387,7 +387,7 @@ VALUES
     ('whatsapp_number_secondary', '919842322624'),
     ('phone', '+91 89035 75802, +91 98423 22624'),
     ('email', 'contact@sathuragiridecoration.com'),
-    ('address', '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu - 626117, India'),
+    ('address', 'Usilai Road, Peraiyur - 625703, Madurai District, Tamil Nadu'),
     ('about_text', 'At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. Rooted in traditional South Indian heritage and elevated with contemporary luxury design, our master artisans create breathtaking wedding mandaps, opulent reception stages, joyous birthday backdrops, and auspicious family celebrations. Every floral garland, pillar, and illumination is meticulously crafted with devotion to perfection.'),
     ('instagram_url', 'https://instagram.com/sathuragiridecoration'),
     ('facebook_url', 'https://facebook.com/sathuragiridecoration'),

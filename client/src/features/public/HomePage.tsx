@@ -20,6 +20,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { EventCategory, PortfolioProject } from '../../types';
+import decorationLogo from '../../assets/Decoration_Logo.png';
 
 export const HomePage: React.FC = () => {
   const { settings } = useSettings();
@@ -75,14 +76,32 @@ export const HomePage: React.FC = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A1816] via-[#1A1816]/75 to-[#1A1816]/50" />
           <div className="absolute inset-0 bg-radial-at-c from-transparent via-[#1A1816]/40 to-[#1A1816]" />
+
+          {/* Clearly Visible Brand Logo Artwork in Background */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30 select-none">
+            <img
+              src={decorationLogo}
+              alt="Sathuragiri Decoration Logo Background"
+              className="w-[340px] sm:w-[480px] md:w-[560px] max-w-full object-contain filter drop-shadow-2xl"
+            />
+          </div>
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white py-12">
-          {/* Brand Tagline Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#B8955A]/40 mb-6 text-xs sm:text-sm font-medium tracking-widest text-[#E6D5B8] uppercase animate-in slide-in-from-top duration-700">
-            <Sparkles className="w-4 h-4 text-[#B8955A]" />
-            <span>Sathuragiri Decoration</span>
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white py-8 sm:py-12">
+          {/* Prominent Authentic Brand Logo Badge */}
+          <div className="inline-flex flex-col items-center justify-center mb-5 animate-in zoom-in-95 duration-700">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-white/20 backdrop-blur-md p-2 border-2 border-[#B8955A] shadow-2xl shadow-[#B8955A]/40 mb-3 group transition-transform hover:scale-105">
+              <img
+                src={decorationLogo}
+                alt="Sathuragiri Decoration Lord Shiva Emblem"
+                className="w-full h-full object-contain filter drop-shadow-md"
+              />
+            </div>
+            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/10 backdrop-blur-md border border-[#B8955A]/50 text-xs sm:text-sm font-semibold tracking-widest text-[#E6D5B8] uppercase">
+              <Sparkles className="w-3.5 h-3.5 text-[#B8955A]" />
+              <span>Sathuragiri Decoration</span>
+            </div>
           </div>
 
           {/* Main Headline */}

@@ -178,7 +178,7 @@ export const ContactPage: React.FC = () => {
                   <div>
                     <p className="font-semibold text-[#28231F]">Studio & Workshop Address</p>
                     <p className="text-xs sm:text-sm text-[#77716B] mt-0.5 leading-relaxed">
-                      {settings?.address || '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu, India'}
+                      {settings?.address || 'Usilai Road, Peraiyur - 625703, Madurai District, Tamil Nadu'}
                     </p>
                   </div>
                 </div>

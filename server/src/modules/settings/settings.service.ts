@@ -47,7 +47,7 @@ export class SettingsService {
     const email = dict['email'] || 'contact@sathuragiridecoration.com';
     const address =
       dict['address'] ||
-      '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu - 626117, India';
+      'Usilai Road, Peraiyur - 625703, Madurai District, Tamil Nadu';
     const aboutText =
       dict['about_text'] ||
       'At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. From opulent South Indian wedding mandaps and royal receptions to joyous birthday themes and traditional baby showers, our master artisans bring perfection, elegance, and divinity to every stage.';

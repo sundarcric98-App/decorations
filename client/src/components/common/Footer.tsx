@@ -153,7 +153,7 @@ export const Footer: React.FC = () => {
               <div className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-[#B8955A] shrink-0 mt-1" />
                 <span className="leading-relaxed">
-                  {settings?.address || '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu, India'}
+                  {settings?.address || 'Usilai Road, Peraiyur - 625703, Madurai District, Tamil Nadu'}
                 </span>
               </div>
               <div className="flex items-start gap-3">

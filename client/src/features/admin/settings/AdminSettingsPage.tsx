@@ -35,7 +35,7 @@ export const AdminSettingsPage: React.FC = () => {
     whatsapp_number: '+919842187654',
     phone: '+91 98421 87654',
     email: 'contact@sathuragiridecoration.com',
-    address: '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu - 626117, India',
+    address: 'Usilai Road, Peraiyur - 625703, Madurai District, Tamil Nadu',
     about_text: 'At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. Rooted in traditional South Indian heritage and elevated with contemporary luxury design, our master artisans create breathtaking wedding mandaps, opulent reception stages, joyous birthday backdrops, and auspicious family celebrations.',
     instagram_url: 'https://instagram.com/sathuragiridecoration',
     facebook_url: 'https://facebook.com/sathuragiridecoration',
@@ -297,7 +297,7 @@ export const AdminSettingsPage: React.FC = () => {
               <Input
                 value={formData.address || ''}
                 onChange={(e) => handleInputChange('address', e.target.value)}
-                placeholder="124, Temple View Road, Madurai & Rajapalayam, Tamil Nadu..."
+                placeholder="Usilai Road, Peraiyur - 625703, Madurai District, Tamil Nadu"
               />
             </div>
           </div>
