@@ -183,7 +183,7 @@ export const ServiceDetailPage: React.FC = () => {
               className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white border border-[#E8E0D6] text-xs font-semibold text-[#24211F] hover:bg-[#FAF7F2] transition-colors"
             >
               <Phone className="w-4 h-4 text-[#B8955A]" />
-              Speak with Event Decorator: {settings?.phone || "+91 98421 87654"}
+              Speak with Event Decorator: {settings?.phone || "+91 89035 75802"}
             </a>
           </div>
         </div>

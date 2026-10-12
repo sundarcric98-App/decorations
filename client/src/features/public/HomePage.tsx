@@ -552,7 +552,7 @@ export const HomePage: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full border border-white/30 text-white hover:bg-white/10 text-base font-medium transition-all w-full sm:w-auto"
             >
               <Phone className="w-4 h-4 text-[#B8955A]" />
-              <span>Call Us: {settings?.phone || "+91 98421 87654"}</span>
+              <span>Call Us: {settings?.phone || "+91 89035 75802"}</span>
             </a>
           </div>
         </div>

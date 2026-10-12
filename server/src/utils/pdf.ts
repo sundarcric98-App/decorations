@@ -14,7 +14,7 @@ export class PdfGenerator {
 
     const businessName = settings?.businessName || 'Sathuragiri Decoration';
     const tagline = settings?.tagline || 'Every Celebration, Beautifully Crafted.';
-    const phone = settings?.phone || '+91 98421 87654';
+    const phone = settings?.phone || '+91 89035 75802';
     const email = settings?.email || 'contact@sathuragiridecoration.com';
     const address = settings?.address || 'Plot No. 45, Temple View Avenue, Madurai - 625009';
 
@@ -177,7 +177,7 @@ export class PdfGenerator {
     const charcoalColor = [36, 33, 31] as [number, number, number];
 
     const businessName = settings?.businessName || 'Sathuragiri Decoration';
-    const phone = settings?.phone || '+91 98421 87654';
+    const phone = settings?.phone || '+91 89035 75802';
 
     doc.setFillColor(...primaryColor);
     doc.rect(0, 0, 148, 6, 'F');

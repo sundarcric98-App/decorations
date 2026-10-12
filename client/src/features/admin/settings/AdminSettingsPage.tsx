@@ -33,7 +33,7 @@ export const AdminSettingsPage: React.FC = () => {
     tagline: "Every Celebration, Beautifully Crafted.",
     logo_url: "/logo-gold.svg",
     whatsapp_number: "+9189035 75802",
-    phone: "+91 98421 87654",
+    phone: "+91 89035 75802",
     email: "contact@sathuragiridecoration.com",
     address: "Usilai Road, Peraiyur - 625703, Madurai District, Tamil Nadu",
     about_text:
