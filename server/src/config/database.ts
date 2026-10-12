@@ -5,13 +5,43 @@ dotenv.config();
 
 let _pool: Pool | null = null;
 
+function normalizeSupabaseUrl(connStr: string): string {
+  if (!connStr) return connStr;
+
+  // Detect IPv6-only direct Supabase host pattern: db.<project-ref>.supabase.co
+  const dbMatch = connStr.match(/@db\.([a-zA-Z0-9]+)\.supabase\.co(?::\d+)?/);
+  if (dbMatch) {
+    const projectRef = dbMatch[1];
+    const poolerHost = process.env.SUPABASE_POOLER_HOST || 'aws-0-ap-southeast-2.pooler.supabase.com';
+    let updated = connStr.replace(dbMatch[0], `@${poolerHost}:6543`);
+
+    // Ensure username is postgres.<projectRef> (required by Supabase Pooler)
+    if (updated.includes('://postgres:') && !updated.includes(`://postgres.${projectRef}:`)) {
+      updated = updated.replace('://postgres:', `://postgres.${projectRef}:`);
+    }
+
+    console.log(`[Database] Auto-normalized IPv6 direct Supabase host to IPv4 Pooler: ${poolerHost}:6543`);
+    return updated;
+  }
+
+  return connStr;
+}
+
 export function getPool(): Pool {
   if (!_pool) {
-    const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres';
+    const defaultProdUrl =
+      'postgresql://postgres.okxjysjwkzjufatmnnss:N%24undar%40%21998@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres';
+    const rawConnection =
+      process.env.DATABASE_URL ||
+      (process.env.NODE_ENV === 'production' || process.env.VERCEL
+        ? defaultProdUrl
+        : 'postgresql://postgres:postgres@localhost:5432/postgres');
+
+    const connectionString = normalizeSupabaseUrl(rawConnection);
     const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
 
     if (!process.env.DATABASE_URL) {
-      console.warn('⚠️ Warning: DATABASE_URL is not set in environment variables. Defaulting to local connection.');
+      console.warn('⚠️ Warning: DATABASE_URL is not set in environment variables. Using fallback connection.');
     }
 
     _pool = new pg.Pool({
