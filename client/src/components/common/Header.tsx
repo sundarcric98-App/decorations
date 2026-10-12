@@ -74,22 +74,23 @@ export const Header: React.FC = () => {
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
             {/* Phone contact */}
             <a
-              href={`tel:${settings?.phone || '+919842187654'}`}
+              href="tel:+918903575802"
               className="flex items-center gap-2 text-xs font-semibold text-[#28231F] hover:text-[#B8955A] bg-[#F3ECE2] px-3.5 py-2 rounded-xl border border-[#E8E0D6] transition-colors"
-              title="Call Sathuragiri Decoration"
+              title="Call Sathuragiri Decoration: +91 89035 75802 / +91 98423 22624"
             >
               <Phone className="w-3.5 h-3.5 text-[#B8955A]" />
-              <span>{settings?.phone || '+91 98421 87654'}</span>
+              <span>+91 89035 75802</span>
             </a>
 
-            {/* WhatsApp Primary Call to Action */}
+            {/* WhatsApp Primary Call to Action with choice dropdown */}
             <WhatsAppButton
               size="sm"
               label="WhatsApp Enquiry"
               className="rounded-xl px-4 py-2 font-medium"
+              showChoice={true}
             />
 
             {/* Admin Portal Shortcut */}
@@ -144,19 +145,38 @@ export const Header: React.FC = () => {
               </Link>
             ))}
 
-            <div className="pt-4 border-t border-[#E8E0D6] flex flex-col gap-3">
-              <a
-                href={`tel:${settings?.phone || '+919842187654'}`}
-                className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#FAF7F2] text-sm font-semibold text-[#28231F] border border-[#E8E0D6]"
-              >
-                <Phone className="w-4 h-4 text-[#B8955A]" />
-                <span>Call Us: {settings?.phone || '+91 98421 87654'}</span>
-              </a>
+            <div className="pt-4 border-t border-[#E8E0D6] flex flex-col gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href="tel:+918903575802"
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#FAF7F2] text-xs font-semibold text-[#28231F] border border-[#E8E0D6]"
+                  title="Call Line 1"
+                >
+                  <Phone className="w-3.5 h-3.5 text-[#B8955A]" />
+                  <span>89035 75802</span>
+                </a>
+                <a
+                  href="tel:+919842322624"
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#FAF7F2] text-xs font-semibold text-[#28231F] border border-[#E8E0D6]"
+                  title="Call Line 2"
+                >
+                  <Phone className="w-3.5 h-3.5 text-[#B8955A]" />
+                  <span>98423 22624</span>
+                </a>
+              </div>
 
               <WhatsAppButton
                 size="md"
-                label="Enquire on WhatsApp Now"
-                className="w-full justify-center"
+                label="WhatsApp 1: +91 89035 75802"
+                preferLine={1}
+                className="w-full justify-center text-xs"
+              />
+
+              <WhatsAppButton
+                size="md"
+                label="WhatsApp 2: +91 98423 22624"
+                preferLine={2}
+                className="w-full justify-center text-xs"
               />
 
               {isAuthenticated ? (

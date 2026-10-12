@@ -5,6 +5,7 @@ export interface SiteSettingsDict {
   tagline?: string;
   logo_url?: string;
   whatsapp_number?: string;
+  whatsapp_number_secondary?: string;
   phone?: string;
   email?: string;
   address?: string;
@@ -16,6 +17,7 @@ export interface SiteSettingsDict {
   // Aliases for frontend convenience
   businessName?: string;
   whatsappNumber?: string;
+  whatsappNumberSecondary?: string;
   logoUrl?: string;
   aboutText?: string;
   instagramUrl?: string;
@@ -38,9 +40,10 @@ export class SettingsService {
     // Default fallbacks if empty
     const businessName = dict['business_name'] || 'Sathuragiri Decoration';
     const tagline = dict['tagline'] || 'Every Celebration, Beautifully Crafted.';
-    const logoUrl = dict['logo_url'] || '/logo-gold.svg';
-    const whatsappNumber = dict['whatsapp_number'] || '+919842187654';
-    const phone = dict['phone'] || '+91 98421 87654';
+    const logoUrl = dict['logo_url'] || '/Decoration_Logo.png';
+    const whatsappNumber = dict['whatsapp_number'] || '918903575802';
+    const whatsappNumberSecondary = dict['whatsapp_number_secondary'] || '919842322624';
+    const phone = dict['phone'] || '+91 89035 75802, +91 98423 22624';
     const email = dict['email'] || 'contact@sathuragiridecoration.com';
     const address =
       dict['address'] ||
@@ -60,6 +63,7 @@ export class SettingsService {
       tagline,
       logo_url: logoUrl,
       whatsapp_number: whatsappNumber,
+      whatsapp_number_secondary: whatsappNumberSecondary,
       phone,
       email,
       address,
@@ -71,6 +75,7 @@ export class SettingsService {
       // CamelCase convenience aliases
       businessName,
       whatsappNumber,
+      whatsappNumberSecondary,
       logoUrl,
       aboutText,
       instagramUrl,
@@ -83,6 +88,7 @@ export class SettingsService {
     const keyMapping: Record<string, string> = {
       businessName: 'business_name',
       whatsappNumber: 'whatsapp_number',
+      whatsappNumberSecondary: 'whatsapp_number_secondary',
       logoUrl: 'logo_url',
       aboutText: 'about_text',
       instagramUrl: 'instagram_url',

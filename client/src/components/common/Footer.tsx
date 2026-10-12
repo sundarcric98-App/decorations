@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, Instagram, Facebook, Youtube, Sparkles, Heart } from 'lucide-react';
+import { Phone, Mail, MapPin, Instagram, Facebook, Youtube, Sparkles, Heart, MessageCircle } from 'lucide-react';
 import { Logo } from './Logo';
 import { WhatsAppButton } from './WhatsAppButton';
 import { useSettings } from '../../context/SettingsContext';
@@ -32,12 +32,25 @@ export const Footer: React.FC = () => {
               {settings?.about_text ||
                 'South India’s premier luxury event decorators. Transforming auspicious occasions into timeless masterpieces with royal mandapams, exotic florals, and unforgettable celebration styling.'}
             </p>
-            <div className="pt-2">
-              <WhatsAppButton
-                size="sm"
-                label="Direct WhatsApp Enquiry"
-                className="rounded-xl w-full sm:w-auto"
-              />
+            <div className="pt-2 flex flex-col gap-2">
+              <a
+                href="https://wa.me/918903575802?text=Hello%20Sathuragiri%20Decoration%2C%20I%20would%20like%20to%20enquire%20about%20your%20event%20decoration%20services."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20BD5A] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all"
+              >
+                <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                <span>WhatsApp 1: +91 89035 75802</span>
+              </a>
+              <a
+                href="https://wa.me/919842322624?text=Hello%20Sathuragiri%20Decoration%2C%20I%20would%20like%20to%20enquire%20about%20your%20event%20decoration%20services."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20BD5A] text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all"
+              >
+                <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                <span>WhatsApp 2: +91 98423 22624</span>
+              </a>
             </div>
             <div className="flex items-center gap-3 pt-3">
               <a
@@ -143,11 +156,16 @@ export const Footer: React.FC = () => {
                   {settings?.address || '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu, India'}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-[#B8955A] shrink-0" />
-                <a href={`tel:${settings?.phone || '+919842187654'}`} className="hover:text-white transition-colors">
-                  {settings?.phone || '+91 98421 87654'}
-                </a>
+              <div className="flex items-start gap-3">
+                <Phone className="w-4 h-4 text-[#B8955A] shrink-0 mt-0.5" />
+                <div className="flex flex-col gap-0.5">
+                  <a href="tel:+918903575802" className="hover:text-white transition-colors">
+                    +91 89035 75802
+                  </a>
+                  <a href="tel:+919842322624" className="hover:text-white transition-colors">
+                    +91 98423 22624
+                  </a>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-[#B8955A] shrink-0" />

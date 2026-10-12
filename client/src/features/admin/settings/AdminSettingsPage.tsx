@@ -56,9 +56,10 @@ export const AdminSettingsPage: React.FC = () => {
       setFormData({
         business_name: serverSettings.business_name || serverSettings.businessName || '',
         tagline: serverSettings.tagline || '',
-        logo_url: serverSettings.logo_url || serverSettings.logoUrl || '/logo-gold.svg',
-        whatsapp_number: serverSettings.whatsapp_number || serverSettings.whatsappNumber || '',
-        phone: serverSettings.phone || '',
+        logo_url: serverSettings.logo_url || serverSettings.logoUrl || '/Decoration_Logo.png',
+        whatsapp_number: serverSettings.whatsapp_number || serverSettings.whatsappNumber || '918903575802',
+        whatsapp_number_secondary: serverSettings.whatsapp_number_secondary || serverSettings.whatsappNumberSecondary || '919842322624',
+        phone: serverSettings.phone || '+91 89035 75802, +91 98423 22624',
         email: serverSettings.email || '',
         address: serverSettings.address || '',
         about_text: serverSettings.about_text || serverSettings.aboutText || '',
@@ -165,31 +166,48 @@ export const AdminSettingsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <div>
               <label className="block text-xs font-semibold text-[#28231F] mb-1">
-                Business WhatsApp Number *
+                WhatsApp Line 1 (Primary) *
               </label>
               <Input
                 value={formData.whatsapp_number || ''}
                 onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
-                placeholder="+919842187654"
+                placeholder="918903575802"
                 required
               />
               <p className="text-[11px] text-gray-500 mt-1">
-                Format: include country code (e.g. +919842187654 or 919842187654).
+                e.g. 918903575802 or +91 89035 75802
               </p>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-[#28231F] mb-1">
-                Business Contact Phone
+                WhatsApp Line 2 (Alternate)
+              </label>
+              <Input
+                value={formData.whatsapp_number_secondary || ''}
+                onChange={(e) => handleInputChange('whatsapp_number_secondary', e.target.value)}
+                placeholder="919842322624"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                e.g. 919842322624 or +91 98423 22624
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#28231F] mb-1">
+                Telephone Enquiries (Calls)
               </label>
               <Input
                 value={formData.phone || ''}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="+91 98421 87654"
+                placeholder="+91 89035 75802, +91 98423 22624"
               />
+              <p className="text-[11px] text-gray-500 mt-1">
+                Displayed in Header & Footer
+              </p>
             </div>
           </div>
 

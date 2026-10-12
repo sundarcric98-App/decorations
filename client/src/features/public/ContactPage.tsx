@@ -12,9 +12,9 @@ export const ContactPage: React.FC = () => {
   const [eventDate, setEventDate] = useState('');
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
+  const [targetLine, setTargetLine] = useState<'line1' | 'line2'>('line1');
 
-  const handleSendWhatsApp = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendWhatsApp = (line: 'line1' | 'line2' = targetLine) => {
     let text = `Hello Sathuragiri Decoration!`;
     if (name.trim()) text += ` I am ${name.trim()}.`;
     text += ` I would like to enquire about your ${eventType} services.`;
@@ -23,7 +23,8 @@ export const ContactPage: React.FC = () => {
     if (notes.trim()) text += ` Requirements: ${notes.trim()}.`;
     text += ` Please share availability, design concepts, and pricing details.`;
 
-    const url = buildWhatsAppUrl(settings?.whatsappNumber, text);
+    const targetNumber = line === 'line2' ? '919842322624' : '918903575802';
+    const url = buildWhatsAppUrl(targetNumber, text);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -134,13 +135,31 @@ export const ContactPage: React.FC = () => {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3.5 px-6 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="w-5 h-5 fill-current" />
-                <span>Open WhatsApp Enquiry</span>
-              </button>
+              {/* WhatsApp Line Selector & Dual Send Buttons */}
+              <div className="pt-2 space-y-3">
+                <label className="block text-xs font-semibold text-[#28231F]">
+                  Send Message via WhatsApp
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSendWhatsApp('line1')}
+                    className="py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-current shrink-0" />
+                    <span>Send to +91 89035 75802</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSendWhatsApp('line2')}
+                    className="py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-current shrink-0" />
+                    <span>Send to +91 98423 22624</span>
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
 
@@ -169,10 +188,31 @@ export const ContactPage: React.FC = () => {
                     <MessageCircle className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-[#28231F]">Official WhatsApp Number</p>
-                    <p className="text-xs sm:text-sm text-[#77716B] mt-0.5">
-                      {settings?.whatsapp_number || settings?.whatsappNumber || '+91 98421 87654'}
-                    </p>
+                    <p className="font-semibold text-[#28231F]">Official WhatsApp Contacts</p>
+                    <div className="mt-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-emerald-800">Line 1:</span>
+                        <a
+                          href="https://wa.me/918903575802"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs sm:text-sm text-[#25D366] hover:underline font-bold"
+                        >
+                          +91 89035 75802
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-emerald-800">Line 2:</span>
+                        <a
+                          href="https://wa.me/919842322624"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs sm:text-sm text-[#25D366] hover:underline font-bold"
+                        >
+                          +91 98423 22624
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -182,12 +222,20 @@ export const ContactPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-[#28231F]">Telephone Enquiries</p>
-                    <a
-                      href={`tel:${settings?.phone || '+919842187654'}`}
-                      className="text-xs sm:text-sm text-[#B8955A] hover:underline font-semibold block mt-0.5"
-                    >
-                      {settings?.phone || '+91 98421 87654'}
-                    </a>
+                    <div className="mt-1 space-y-1">
+                      <a
+                        href="tel:+918903575802"
+                        className="text-xs sm:text-sm text-[#B8955A] hover:underline font-semibold block"
+                      >
+                        +91 89035 75802
+                      </a>
+                      <a
+                        href="tel:+919842322624"
+                        className="text-xs sm:text-sm text-[#B8955A] hover:underline font-semibold block"
+                      >
+                        +91 98423 22624
+                      </a>
+                    </div>
                   </div>
                 </div>
 

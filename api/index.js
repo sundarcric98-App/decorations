@@ -72469,9 +72469,10 @@ var SettingsService = class {
     }
     const businessName = dict["business_name"] || "Sathuragiri Decoration";
     const tagline = dict["tagline"] || "Every Celebration, Beautifully Crafted.";
-    const logoUrl = dict["logo_url"] || "/logo-gold.svg";
-    const whatsappNumber = dict["whatsapp_number"] || "+919842187654";
-    const phone = dict["phone"] || "+91 98421 87654";
+    const logoUrl = dict["logo_url"] || "/Decoration_Logo.png";
+    const whatsappNumber = dict["whatsapp_number"] || "918903575802";
+    const whatsappNumberSecondary = dict["whatsapp_number_secondary"] || "919842322624";
+    const phone = dict["phone"] || "+91 89035 75802, +91 98423 22624";
     const email = dict["email"] || "contact@sathuragiridecoration.com";
     const address = dict["address"] || "124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu - 626117, India";
     const aboutText = dict["about_text"] || "At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. From opulent South Indian wedding mandaps and royal receptions to joyous birthday themes and traditional baby showers, our master artisans bring perfection, elegance, and divinity to every stage.";
@@ -72485,6 +72486,7 @@ var SettingsService = class {
       tagline,
       logo_url: logoUrl,
       whatsapp_number: whatsappNumber,
+      whatsapp_number_secondary: whatsappNumberSecondary,
       phone,
       email,
       address,
@@ -72496,6 +72498,7 @@ var SettingsService = class {
       // CamelCase convenience aliases
       businessName,
       whatsappNumber,
+      whatsappNumberSecondary,
       logoUrl,
       aboutText,
       instagramUrl,
@@ -72507,6 +72510,7 @@ var SettingsService = class {
     const keyMapping = {
       businessName: "business_name",
       whatsappNumber: "whatsapp_number",
+      whatsappNumberSecondary: "whatsapp_number_secondary",
       logoUrl: "logo_url",
       aboutText: "about_text",
       instagramUrl: "instagram_url",

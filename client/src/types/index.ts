@@ -23,6 +23,8 @@ export interface BusinessSettings {
   alternatePhone?: string | null;
   whatsappNumber: string;
   whatsapp_number?: string;
+  whatsappNumberSecondary?: string | null;
+  whatsapp_number_secondary?: string | null;
   email: string;
   address: string;
   aboutText?: string;
