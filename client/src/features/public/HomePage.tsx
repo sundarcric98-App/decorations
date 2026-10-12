@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Sparkles,
   ArrowRight,
@@ -13,14 +13,13 @@ import {
   Calendar,
   Layers,
   HeartHandshake,
-} from 'lucide-react';
-import { Button } from '../../components/common/Button';
-import { WhatsAppButton } from '../../components/common/WhatsAppButton';
-import { useSettings } from '../../context/SettingsContext';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../../lib/api';
-import { EventCategory, PortfolioProject } from '../../types';
-import decorationLogo from '../../assets/Decoration_Logo.png';
+} from "lucide-react";
+import { Button } from "../../components/common/Button";
+import { WhatsAppButton } from "../../components/common/WhatsAppButton";
+import { useSettings } from "../../context/SettingsContext";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../../lib/api";
+import { EventCategory, PortfolioProject } from "../../types";
 
 export const HomePage: React.FC = () => {
   const { settings } = useSettings();
@@ -28,36 +27,36 @@ export const HomePage: React.FC = () => {
 
   // Fetch active categories from Supabase
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['public-categories'],
-    queryFn: () => api.get<EventCategory[]>('/categories'),
+    queryKey: ["public-categories"],
+    queryFn: () => api.get<EventCategory[]>("/categories"),
   });
 
   // Fetch published portfolio projects from Supabase
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
-    queryKey: ['public-portfolio-projects'],
-    queryFn: () => api.get<PortfolioProject[]>('/portfolio?limit=8'),
+    queryKey: ["public-portfolio-projects"],
+    queryFn: () => api.get<PortfolioProject[]>("/portfolio?limit=8"),
   });
 
   const valueProps = [
     {
       icon: <Sparkles className="w-6 h-6 text-[#B8955A]" />,
-      title: 'South Indian Master Artistry',
-      desc: 'Bespoke temple mandapams, carved pillars, authentic fragrant florals, and majestic royal reception backdrops.',
+      title: "South Indian Master Artistry",
+      desc: "Bespoke temple mandapams, carved pillars, authentic fragrant florals, and majestic royal reception backdrops.",
     },
     {
       icon: <Clock className="w-6 h-6 text-[#B8955A]" />,
-      title: 'Guaranteed Punctual Setup',
-      desc: 'Our experienced crews complete all stage, entrance, and hall installations well ahead of auspicious rituals.',
+      title: "Guaranteed Punctual Setup",
+      desc: "Our experienced crews complete all stage, entrance, and hall installations well ahead of auspicious rituals.",
     },
     {
       icon: <ShieldCheck className="w-6 h-6 text-[#B8955A]" />,
-      title: 'End-to-End Event Management',
-      desc: 'From sacred wedding stages to pre-wedding photography zones, traditional catering setups, and festive stalls.',
+      title: "End-to-End Event Management",
+      desc: "From sacred wedding stages to pre-wedding photography zones, traditional catering setups, and festive stalls.",
     },
     {
       icon: <Award className="w-6 h-6 text-[#B8955A]" />,
-      title: 'Transparent WhatsApp Booking',
-      desc: 'Instant direct consultations via WhatsApp with customized design ideas, transparent pricing, and zero hidden costs.',
+      title: "Transparent WhatsApp Booking",
+      desc: "Instant direct consultations via WhatsApp with customized design ideas, transparent pricing, and zero hidden costs.",
     },
   ];
 
@@ -76,26 +75,10 @@ export const HomePage: React.FC = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A1816] via-[#1A1816]/75 to-[#1A1816]/50" />
           <div className="absolute inset-0 bg-radial-at-c from-transparent via-[#1A1816]/40 to-[#1A1816]" />
-
         </div>
 
         {/* Hero Content */}
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white py-8 sm:py-12">
-          {/* Prominent Authentic Brand Logo Badge */}
-          <div className="inline-flex flex-col items-center justify-center mb-5 animate-in zoom-in-95 duration-700">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-white/20 backdrop-blur-md p-2 border-2 border-[#B8955A] shadow-2xl shadow-[#B8955A]/40 mb-3 group transition-transform hover:scale-105">
-              <img
-                src={decorationLogo}
-                alt="Sathuragiri Decoration Lord Shiva Emblem"
-                className="w-full h-full object-contain filter drop-shadow-md"
-              />
-            </div>
-            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/10 backdrop-blur-md border border-[#B8955A]/50 text-xs sm:text-sm font-semibold tracking-widest text-[#E6D5B8] uppercase">
-              <Sparkles className="w-3.5 h-3.5 text-[#B8955A]" />
-              <span>Sathuragiri Decoration</span>
-            </div>
-          </div>
-
           {/* Main Headline */}
           <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.15] drop-shadow-md">
             Every Celebration, <br className="hidden sm:inline" />
@@ -106,7 +89,10 @@ export const HomePage: React.FC = () => {
 
           {/* Business Introduction */}
           <p className="max-w-3xl mx-auto text-base sm:text-xl text-[#ECE7DF] leading-relaxed mb-10 font-sans font-light drop-shadow">
-            South India’s premier luxury wedding & celebration designers. We craft majestic South Indian temple mandapams, regal reception stages, joyful baby showers, and unforgettable celebrations with breathtaking floral artistry.
+            South India’s premier luxury wedding & celebration designers. We
+            craft majestic South Indian temple mandapams, regal reception
+            stages, joyful baby showers, and unforgettable celebrations with
+            breathtaking floral artistry.
           </p>
 
           {/* Call to Actions */}
@@ -133,20 +119,36 @@ export const HomePage: React.FC = () => {
           {/* Quick Metrics Bar */}
           <div className="mt-14 pt-8 border-t border-white/15 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
-              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">500+</p>
-              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">Weddings Crafted</p>
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">
+                500+
+              </p>
+              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">
+                Weddings Crafted
+              </p>
             </div>
             <div>
-              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">9+</p>
-              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">Event Categories</p>
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">
+                9+
+              </p>
+              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">
+                Event Categories
+              </p>
             </div>
             <div>
-              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">100%</p>
-              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">Punctual Execution</p>
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">
+                100%
+              </p>
+              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">
+                Punctual Execution
+              </p>
             </div>
             <div>
-              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">5.0 ★</p>
-              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">Customer Reviews</p>
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">
+                5.0 ★
+              </p>
+              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">
+                Customer Reviews
+              </p>
             </div>
           </div>
         </div>
@@ -165,21 +167,31 @@ export const HomePage: React.FC = () => {
               Featured Event Services
             </h2>
             <p className="text-[#77716B] text-base leading-relaxed">
-              Explore our wide array of bespoke decoration services, each thoughtfully designed to reflect South Indian tradition, regal grandeur, and contemporary elegance.
+              Explore our wide array of bespoke decoration services, each
+              thoughtfully designed to reflect South Indian tradition, regal
+              grandeur, and contemporary elegance.
             </p>
           </div>
 
           {categoriesLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-96 rounded-2xl bg-gray-100 animate-pulse" />
+                <div
+                  key={i}
+                  className="h-96 rounded-2xl bg-gray-100 animate-pulse"
+                />
               ))}
             </div>
           ) : categories.length === 0 ? (
             <div className="text-center py-16 bg-[#FAF7F2] rounded-2xl border border-[#E8E0D6] p-8">
               <Layers className="w-12 h-12 text-[#B8955A] mx-auto mb-3" />
-              <p className="font-serif text-xl font-bold text-[#28231F]">No Categories Published Yet</p>
-              <p className="text-sm text-[#77716B] mt-1">Active categories will be presented here as soon as they are added.</p>
+              <p className="font-serif text-xl font-bold text-[#28231F]">
+                No Categories Published Yet
+              </p>
+              <p className="text-sm text-[#77716B] mt-1">
+                Active categories will be presented here as soon as they are
+                added.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -194,7 +206,7 @@ export const HomePage: React.FC = () => {
                       src={
                         cat.cover_image_url ||
                         cat.coverImage ||
-                        'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'
+                        "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80"
                       }
                       alt={cat.name}
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
@@ -205,11 +217,12 @@ export const HomePage: React.FC = () => {
                       <h3 className="font-serif text-xl font-bold text-white tracking-wide">
                         {cat.name}
                       </h3>
-                      {cat.projectCount !== undefined && cat.projectCount > 0 && (
-                        <span className="text-xs text-[#E6D5B8] font-medium">
-                          {cat.projectCount} Completed Projects
-                        </span>
-                      )}
+                      {cat.projectCount !== undefined &&
+                        cat.projectCount > 0 && (
+                          <span className="text-xs text-[#E6D5B8] font-medium">
+                            {cat.projectCount} Completed Projects
+                          </span>
+                        )}
                     </div>
                   </div>
 
@@ -217,7 +230,7 @@ export const HomePage: React.FC = () => {
                   <div className="p-6 flex flex-col justify-between flex-grow">
                     <p className="text-sm text-[#77716B] leading-relaxed line-clamp-3 mb-6">
                       {cat.description ||
-                        'Exquisitely designed stage decorations, floral concepts, and ambient styling for your celebration.'}
+                        "Exquisitely designed stage decorations, floral concepts, and ambient styling for your celebration."}
                     </p>
 
                     <div className="flex items-center gap-3 pt-4 border-t border-[#E8E0D6]">
@@ -270,7 +283,8 @@ export const HomePage: React.FC = () => {
                 Recently Completed Projects
               </h2>
               <p className="text-[#77716B] text-base leading-relaxed">
-                Take inspiration from our recently decorated weddings, grand receptions, traditional ceremonies, and celebratory stages.
+                Take inspiration from our recently decorated weddings, grand
+                receptions, traditional ceremonies, and celebratory stages.
               </p>
             </div>
 
@@ -290,14 +304,22 @@ export const HomePage: React.FC = () => {
           {projectsLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-80 rounded-2xl bg-gray-200 animate-pulse" />
+                <div
+                  key={i}
+                  className="h-80 rounded-2xl bg-gray-200 animate-pulse"
+                />
               ))}
             </div>
           ) : projects.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-[#E8E0D6] p-8">
               <Camera className="w-12 h-12 text-[#B8955A] mx-auto mb-3" />
-              <p className="font-serif text-xl font-bold text-[#28231F]">No Projects Available</p>
-              <p className="text-sm text-[#77716B] mt-1">Completed decoration works will appear here as soon as they are published.</p>
+              <p className="font-serif text-xl font-bold text-[#28231F]">
+                No Projects Available
+              </p>
+              <p className="text-sm text-[#77716B] mt-1">
+                Completed decoration works will appear here as soon as they are
+                published.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -312,7 +334,7 @@ export const HomePage: React.FC = () => {
                       src={
                         proj.cover_image_url ||
                         proj.coverImage ||
-                        'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'
+                        "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80"
                       }
                       alt={proj.title}
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 cursor-pointer"
@@ -320,14 +342,14 @@ export const HomePage: React.FC = () => {
                         setSelectedImage(
                           proj.cover_image_url ||
                             proj.coverImage ||
-                            'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80'
+                            "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
                         )
                       }
                       loading="lazy"
                     />
                     <div className="absolute top-3 left-3">
                       <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[11px] font-semibold text-white tracking-wide">
-                        {proj.categoryName || 'Decoration'}
+                        {proj.categoryName || "Decoration"}
                       </span>
                     </div>
                   </div>
@@ -341,7 +363,8 @@ export const HomePage: React.FC = () => {
                         </h3>
                       </Link>
                       <p className="text-xs text-[#77716B] line-clamp-2 mb-4 leading-relaxed">
-                        {proj.description || 'Crafted with passion, traditional elegance, and meticulous floral arrangements.'}
+                        {proj.description ||
+                          "Crafted with passion, traditional elegance, and meticulous floral arrangements."}
                       </p>
                       {proj.location && (
                         <p className="text-xs text-gray-500 flex items-center gap-1 mb-4">
@@ -388,7 +411,8 @@ export const HomePage: React.FC = () => {
               Why Couples & Families Choose Us
             </h2>
             <p className="text-[#77716B] text-base leading-relaxed">
-              We treat every wedding and function as our own family milestone. Here is why clients trust us across Tamil Nadu.
+              We treat every wedding and function as our own family milestone.
+              Here is why clients trust us across Tamil Nadu.
             </p>
           </div>
 
@@ -401,8 +425,12 @@ export const HomePage: React.FC = () => {
                 <div className="w-12 h-12 rounded-xl bg-white border border-[#E8E0D6] flex items-center justify-center mb-5 shadow-xs">
                   {item.icon}
                 </div>
-                <h3 className="font-serif text-lg font-bold text-[#28231F] mb-2">{item.title}</h3>
-                <p className="text-sm text-[#77716B] leading-relaxed">{item.desc}</p>
+                <h3 className="font-serif text-lg font-bold text-[#28231F] mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-[#77716B] leading-relaxed">
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -425,8 +453,12 @@ export const HomePage: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6 text-white">
-                  <p className="font-serif text-xl font-bold">Divine Mandapams & Royal Stages</p>
-                  <p className="text-xs text-[#E6D5B8] mt-1">Madurai • Rajapalayam • Tamil Nadu</p>
+                  <p className="font-serif text-xl font-bold">
+                    Divine Mandapams & Royal Stages
+                  </p>
+                  <p className="text-xs text-[#E6D5B8] mt-1">
+                    Madurai • Rajapalayam • Tamil Nadu
+                  </p>
                 </div>
               </div>
 
@@ -437,8 +469,12 @@ export const HomePage: React.FC = () => {
                     <HeartHandshake className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#28231F] uppercase tracking-wider">Trusted by Families</p>
-                    <p className="text-xs text-[#77716B]">10+ Years of Craftsmanship</p>
+                    <p className="text-xs font-bold text-[#28231F] uppercase tracking-wider">
+                      Trusted by Families
+                    </p>
+                    <p className="text-xs text-[#77716B]">
+                      10+ Years of Craftsmanship
+                    </p>
                   </div>
                 </div>
               </div>
@@ -454,10 +490,13 @@ export const HomePage: React.FC = () => {
               </h2>
               <p className="text-base text-[#77716B] leading-relaxed">
                 {settings?.about_text ||
-                  'At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. Rooted in South Indian heritage and elevated by contemporary artistry, our master craftsmen create bespoke wedding mandaps, reception stages, floral masterpieces, and memorable festive ambiances.'}
+                  "At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. Rooted in South Indian heritage and elevated by contemporary artistry, our master craftsmen create bespoke wedding mandaps, reception stages, floral masterpieces, and memorable festive ambiances."}
               </p>
               <p className="text-sm text-[#77716B] leading-relaxed">
-                From auspicious Muhurtham temple setups in Madurai to opulent reception halls in Rajapalayam and surrounding districts, we ensure your family and guests are immersed in grandeur and warmth.
+                From auspicious Muhurtham temple setups in Madurai to opulent
+                reception halls in Rajapalayam and surrounding districts, we
+                ensure your family and guests are immersed in grandeur and
+                warmth.
               </p>
 
               <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
@@ -467,7 +506,11 @@ export const HomePage: React.FC = () => {
                   className="w-full sm:w-auto"
                 />
                 <Link to="/about" className="w-full sm:w-auto">
-                  <Button variant="outline" size="md" className="w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="md"
+                    className="w-full sm:w-auto"
+                  >
                     Learn More About Us
                   </Button>
                 </Link>
@@ -492,7 +535,9 @@ export const HomePage: React.FC = () => {
           </h2>
 
           <p className="max-w-2xl mx-auto text-[#CECDCC] text-base sm:text-lg leading-relaxed font-light">
-            Contact us directly on WhatsApp with your event date and venue details. We will share curated design concepts, stage photographs, and a customized quotation promptly.
+            Contact us directly on WhatsApp with your event date and venue
+            details. We will share curated design concepts, stage photographs,
+            and a customized quotation promptly.
           </p>
 
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -503,11 +548,11 @@ export const HomePage: React.FC = () => {
               className="w-full sm:w-auto shadow-2xl"
             />
             <a
-              href={`tel:${settings?.phone || '+919842187654'}`}
+              href={`tel:${settings?.phone || "+9189035 75802"}`}
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full border border-white/30 text-white hover:bg-white/10 text-base font-medium transition-all w-full sm:w-auto"
             >
               <Phone className="w-4 h-4 text-[#B8955A]" />
-              <span>Call Us: {settings?.phone || '+91 98421 87654'}</span>
+              <span>Call Us: {settings?.phone || "+91 98421 87654"}</span>
             </a>
           </div>
         </div>

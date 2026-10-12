@@ -107,11 +107,12 @@ export const LoginPage: React.FC = () => {
                 rightIcon={
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                    aria-label="Toggle password visibility"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="p-1 rounded-md text-gray-400 hover:text-[#B8955A] hover:bg-gray-100 transition-colors cursor-pointer focus:outline-none"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-4 h-4 text-[#B8955A]" /> : <Eye className="w-4 h-4" />}
                   </button>
                 }
                 error={errors.password?.message}

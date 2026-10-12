@@ -236,12 +236,12 @@ describe('Sathuragiri Decoration - Portfolio & Admin API Test Suite', () => {
         .put('/api/admin/settings')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          whatsapp_number: '+919842187654',
+          whatsapp_number: '+9189035 75802',
           business_name: 'Sathuragiri Decoration',
         });
       expect(putRes.status).toBe(200);
       expect(putRes.body.success).toBe(true);
-      expect(putRes.body.data.whatsapp_number).toBe('+919842187654');
+      expect(putRes.body.data.whatsapp_number).toBe('+9189035 75802');
     });
   });
 });
