@@ -77,14 +77,6 @@ export const HomePage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A1816] via-[#1A1816]/75 to-[#1A1816]/50" />
           <div className="absolute inset-0 bg-radial-at-c from-transparent via-[#1A1816]/40 to-[#1A1816]" />
 
-          {/* Clearly Visible Brand Logo Artwork in Background */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30 select-none">
-            <img
-              src={decorationLogo}
-              alt="Sathuragiri Decoration Logo Background"
-              className="w-[340px] sm:w-[480px] md:w-[560px] max-w-full object-contain filter drop-shadow-2xl"
-            />
-          </div>
         </div>
 
         {/* Hero Content */}
