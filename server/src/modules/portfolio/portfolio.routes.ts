@@ -1,16 +1,19 @@
 import { Router } from 'express';
 import { PortfolioController } from './portfolio.controller.js';
-import { authenticate, requireRole } from '../../middleware/auth.middleware.js';
+import { authenticate } from '../../middleware/auth.middleware.js';
 
-const router = Router();
+// Public router (mounted at /api/portfolio)
+export const portfolioPublicRouter = Router();
+portfolioPublicRouter.get('/', PortfolioController.getPublicProjects);
+portfolioPublicRouter.get('/:slug', PortfolioController.getProjectBySlug);
 
-// Public
-router.get('/', PortfolioController.getProjects);
-router.get('/:slug', PortfolioController.getProjectBySlug);
+// Admin router (mounted at /api/admin/portfolio)
+export const portfolioAdminRouter = Router();
+portfolioAdminRouter.use(authenticate);
+portfolioAdminRouter.get('/', PortfolioController.getAdminProjects);
+portfolioAdminRouter.post('/', PortfolioController.createProject);
+portfolioAdminRouter.get('/:id', PortfolioController.getAdminProjectById);
+portfolioAdminRouter.put('/:id', PortfolioController.updateProject);
+portfolioAdminRouter.delete('/:id', PortfolioController.deleteProject);
 
-// Protected Admin/Manager
-router.post('/', authenticate, requireRole(['OWNER', 'MANAGER']), PortfolioController.createProject);
-router.patch('/:id', authenticate, requireRole(['OWNER', 'MANAGER']), PortfolioController.updateProject);
-router.delete('/:id', authenticate, requireRole(['OWNER', 'MANAGER']), PortfolioController.deleteProject);
-
-export default router;
+export default portfolioPublicRouter;

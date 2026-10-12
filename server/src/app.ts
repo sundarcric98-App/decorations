@@ -4,36 +4,25 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 
 import { errorHandler } from './middleware/error.middleware.js';
 import { apiSuccess } from './utils/response.js';
 
-// Route imports
+// Clean Route Imports for Sathuragiri Decoration
+import { categoriesPublicRouter, categoriesAdminRouter } from './modules/categories/categories.routes.js';
+import { portfolioPublicRouter, portfolioAdminRouter } from './modules/portfolio/portfolio.routes.js';
+import { settingsPublicRouter, settingsAdminRouter } from './modules/settings/settings.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
-import servicesRoutes from './modules/services/services.routes.js';
-import packagesRoutes from './modules/packages/packages.routes.js';
-import portfolioRoutes from './modules/portfolio/portfolio.routes.js';
-import enquiriesRoutes from './modules/enquiries/enquiries.routes.js';
-import bookingsRoutes from './modules/bookings/bookings.routes.js';
-import quotationsRoutes from './modules/quotations/quotations.routes.js';
-import paymentsRoutes from './modules/payments/payments.routes.js';
-import customersRoutes from './modules/customers/customers.routes.js';
-import staffRoutes from './modules/staff/staff.routes.js';
-import vendorsRoutes from './modules/vendors/vendors.routes.js';
-import expensesRoutes from './modules/expenses/expenses.routes.js';
-import calendarRoutes from './modules/calendar/calendar.routes.js';
-import reportsRoutes from './modules/reports/reports.routes.js';
-import notificationsRoutes from './modules/notifications/notifications.routes.js';
-import settingsRoutes from './modules/settings/settings.routes.js';
 import uploadsRoutes from './modules/uploads/uploads.routes.js';
 
 dotenv.config();
 
 const app = express();
 
-// Trust proxy for Vercel and reverse proxies
+// Trust reverse proxy for Vercel and serverless deployment
 app.set('trust proxy', 1);
 
 // Security Headers
@@ -43,7 +32,7 @@ app.use(
   })
 );
 
-// CORS configuration
+// CORS configuration supporting production domains and local development
 const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 app.use(
   cors({
@@ -65,16 +54,18 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Request logging (development only)
+// Request logging in development
 if (process.env.NODE_ENV === 'development' && !process.env.VERCEL) {
   app.use(morgan('dev'));
 }
 
-// Static Uploads
+// Static uploads serving (if directory exists)
 const uploadDir = path.resolve(process.cwd(), 'uploads');
-app.use('/uploads', express.static(uploadDir));
+if (fs.existsSync(uploadDir)) {
+  app.use('/uploads', express.static(uploadDir));
+}
 
-// Health Checks & Base Ping
+// Health check endpoint
 app.get(['/health', '/api/health', '/api', '/api/index'], (req: Request, res: Response) => {
   return apiSuccess(
     res,
@@ -82,38 +73,43 @@ app.get(['/health', '/api/health', '/api', '/api/index'], (req: Request, res: Re
       status: 'UP',
       application: 'Sathuragiri Decoration API',
       business: 'Sathuragiri Decoration',
+      tagline: 'Every Celebration, Beautifully Crafted.',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     },
-    'API is running healthy'
+    'Sathuragiri Decoration API is online and healthy.'
   );
 });
 
-// REST API V1 Endpoints
-const apiV1 = express.Router();
-apiV1.use('/auth', authRoutes);
-apiV1.use('/dashboard', dashboardRoutes);
-apiV1.use('/services', servicesRoutes);
-apiV1.use('/packages', packagesRoutes);
-apiV1.use('/portfolio', portfolioRoutes);
-apiV1.use('/enquiries', enquiriesRoutes);
-apiV1.use('/bookings', bookingsRoutes);
-apiV1.use('/quotations', quotationsRoutes);
-apiV1.use('/payments', paymentsRoutes);
-apiV1.use('/customers', customersRoutes);
-apiV1.use('/staff', staffRoutes);
-apiV1.use('/vendors', vendorsRoutes);
-apiV1.use('/expenses', expensesRoutes);
-apiV1.use('/calendar', calendarRoutes);
-apiV1.use('/reports', reportsRoutes);
-apiV1.use('/notifications', notificationsRoutes);
-apiV1.use('/settings', settingsRoutes);
-apiV1.use('/uploads', uploadsRoutes);
+// ------------------------------------------------------------------------------
+// API ROUTING: Registered on both /api and /api/v1 for total compatibility
+// ------------------------------------------------------------------------------
+const apiRouter = express.Router();
 
-app.use('/api/v1', apiV1);
-app.use('/v1', apiV1);
+// 1. Public API Endpoints
+apiRouter.use('/categories', categoriesPublicRouter);
+apiRouter.use('/portfolio', portfolioPublicRouter);
+apiRouter.use('/settings', settingsPublicRouter);
 
-// 404 Route Handler
+// 2. Admin Authentication Endpoints
+apiRouter.use('/admin/auth', authRoutes);
+apiRouter.use('/auth', authRoutes);
+
+// 3. Admin Protected CRUD Endpoints
+apiRouter.use('/admin/categories', categoriesAdminRouter);
+apiRouter.use('/admin/portfolio', portfolioAdminRouter);
+apiRouter.use('/admin/settings', settingsAdminRouter);
+apiRouter.use('/admin/stats', dashboardRoutes);
+apiRouter.use('/admin/dashboard', dashboardRoutes);
+apiRouter.use('/admin/upload', uploadsRoutes);
+apiRouter.use('/uploads', uploadsRoutes);
+
+// Mount router
+app.use('/api', apiRouter);
+app.use('/api/v1', apiRouter);
+app.use('/v1', apiRouter);
+
+// 404 Route Handler for undefined endpoints
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
@@ -121,7 +117,7 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-// Centralized Error Handling Middleware
+// Centralized error handling middleware
 app.use(errorHandler);
 
 export { app };

@@ -1,9 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Heart, ShieldCheck, Clock, Award, Users, ArrowRight } from 'lucide-react';
-import { Badge } from '../../components/common/Badge';
+import { Sparkles, HeartHandshake, ShieldCheck, Clock, Award, Phone } from 'lucide-react';
+import { WhatsAppButton } from '../../components/common/WhatsAppButton';
 import { Button } from '../../components/common/Button';
-import { Card } from '../../components/common/Card';
 import { useSettings } from '../../context/SettingsContext';
 
 export const AboutPage: React.FC = () => {
@@ -11,118 +10,140 @@ export const AboutPage: React.FC = () => {
 
   const values = [
     {
-      title: 'Traditional Sanctity',
-      desc: 'We honor sacred South Indian customs, temple architecture, and rituals with authentic materials, auspicious flowers, and reverence.',
+      icon: <Sparkles className="w-6 h-6 text-[#B8955A]" />,
+      title: 'Sacred Traditional Sanctity',
+      desc: 'We honor South Indian traditions, temple architecture, and sacred rituals with auspicious fresh flowers, brass artifacts, and divine reverence.',
     },
     {
+      icon: <Award className="w-6 h-6 text-[#B8955A]" />,
       title: 'Artistic Excellence',
-      desc: 'Our master craftsmen and floral designers elevate every space into a symphony of color, geometry, and enchanting lighting.',
+      desc: 'Our master craftsmen transform venues with meticulous floral arches, crystal chandeliers, ambient lighting, and bespoke stage backdrops.',
     },
     {
-      title: 'Uncompromised Punctuality',
-      desc: 'We guarantee full stage and venue readiness 4 to 6 hours prior to auspicious Muhurtham hours, so families can celebrate worry-free.',
+      icon: <Clock className="w-6 h-6 text-[#B8955A]" />,
+      title: '100% Punctual Guarantee',
+      desc: 'Every stage and entrance fabrication is completed well before the auspicious Muhurtham hours, ensuring total peace of mind.',
     },
     {
-      title: 'Transparent Collaboration',
-      desc: 'No hidden surcharges. Clear itemized estimates, milestone payments, and continuous updates from your dedicated event coordinator.',
+      icon: <HeartHandshake className="w-6 h-6 text-[#B8955A]" />,
+      title: 'Personalized Family Service',
+      desc: 'Direct consultation on WhatsApp, transparent cost breakdowns, zero hidden fees, and dedicated support for every celebration.',
     },
   ];
 
   return (
-    <div className="pt-28 pb-20 space-y-20">
-      {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-        <Badge variant="gold">Our Heritage & Craft</Badge>
-        <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold text-[#24211F] leading-tight">
-          Crafting Divine Celebrations <br className="hidden sm:inline" />
-          <span className="gold-gradient-text italic">Since Inception</span>
+    <div className="pt-32 pb-24 min-h-screen bg-[#FAF7F2]">
+      {/* Header Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 mb-16">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#B8955A]/10 border border-[#B8955A]/30 text-xs font-semibold uppercase tracking-widest text-[#B8955A]">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Our Heritage & Craftsmanship</span>
+        </div>
+        <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#28231F] leading-tight">
+          About {settings?.business_name || settings?.businessName || 'Sathuragiri Decoration'}
         </h1>
         <p className="max-w-3xl mx-auto text-sm sm:text-base text-[#77716B] leading-relaxed">
-          {settings?.businessName || 'Sathuragiri Decoration'} was founded with a singular vision: to bring the breathtaking architectural splendor and divine sanctity of Tamil Nadu’s heritage temples into modern weddings and milestone family celebrations.
+          {settings?.tagline || 'Every Celebration, Beautifully Crafted.'}
         </p>
       </div>
 
-      {/* Story & Image Split */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Main Narrative Split */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <h2 className="font-serif text-3xl font-bold text-[#24211F]">
-              Where Tradition Meets Modern Sophistication
-            </h2>
-            <div className="space-y-4 text-sm text-[#56504A] leading-relaxed">
-              <p>
-                From humble beginnings in Madurai to becoming a trusted name across South India, our journey has been defined by a deep devotion to quality and craftsmanship.
-              </p>
-              <p>
-                Whether it is hand-threading 150 kilograms of fresh Madurai Malli (jasmine) for a temple mandapam, engineering a 50-foot crystal reception floral wall, or orchestrating a traditional 24-dish banana leaf feast, we treat every celebration as if it were our own family’s.
-              </p>
-              <p>
-                Today, Sathuragiri Decoration operates full-scale event fabrication studios, sound & lighting inventories, and in-house floral styling teams to deliver end-to-end peace of mind to brides, grooms, and host families.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <div className="p-4 bg-[#FAF7F2] rounded-2xl border border-[#E8E0D6]">
-                <div className="font-serif text-3xl font-bold text-[#B8955A]">100%</div>
-                <div className="text-xs text-[#77716B] font-semibold uppercase mt-1">Fresh Flowers</div>
-              </div>
-              <div className="p-4 bg-[#FAF7F2] rounded-2xl border border-[#E8E0D6]">
-                <div className="font-serif text-3xl font-bold text-[#B8955A]">A-to-Z</div>
-                <div className="text-xs text-[#77716B] font-semibold uppercase mt-1">Full Service Management</div>
-              </div>
-            </div>
-          </div>
-
+          {/* Visual Showcase */}
           <div className="relative">
-            <img
-              src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1000&q=80"
-              alt="Sathuragiri Traditional Wedding Mandapam"
-              className="rounded-3xl shadow-luxury object-cover aspect-4/3 w-full"
-            />
-            <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-2xl shadow-luxury-lg border border-[#E8E0D6] hidden sm:block max-w-xs">
-              <Sparkles className="w-6 h-6 text-[#B8955A] mb-2" />
-              <p className="font-serif text-sm font-bold text-[#24211F]">
-                "Every celebration deserves to be an unforgettable masterpiece."
+            <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-black/10">
+              <img
+                src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80"
+                alt="Sathuragiri Master Mandapam Craft"
+                className="w-full h-[450px] object-cover object-center"
+              />
+            </div>
+            <div className="absolute -bottom-6 -right-2 sm:right-6 bg-white p-5 rounded-2xl shadow-xl border border-[#E8E0D6] max-w-xs">
+              <p className="font-serif font-bold text-[#28231F] text-base">South Indian Artistry</p>
+              <p className="text-xs text-[#77716B] mt-1">Weddings • Receptions • Engagements • Family Functions</p>
+            </div>
+          </div>
+
+          {/* Narrative Text */}
+          <div className="space-y-6">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#28231F] leading-tight">
+              Where South Indian Heritage Meets Contemporary Elegance
+            </h2>
+            <div className="space-y-4 text-sm sm:text-base text-[#56504A] leading-relaxed">
+              <p>
+                {settings?.about_text ||
+                  'At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. Rooted in traditional South Indian heritage and elevated with contemporary luxury design, our master artisans create breathtaking wedding mandaps, opulent reception stages, joyous birthday backdrops, and auspicious family celebrations.'}
               </p>
+              <p>
+                From hand-strung Madurai jasmine garlands and brass Kuthuvilakku styling to royal velvet reception thrones and ambient starry lighting, our experienced team works with deep devotion to bring your dream decor to life.
+              </p>
+              <p>
+                Whether you are hosting an intimate traditional family function or a grand 2,000-guest wedding reception, we ensure every detail is tailored with perfection and delivered punctually.
+              </p>
+            </div>
+
+            <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
+              <WhatsAppButton
+                size="md"
+                label="Enquire on WhatsApp"
+                className="w-full sm:w-auto"
+              />
+              <Link to="/portfolio" className="w-full sm:w-auto">
+                <Button variant="outline" size="md" className="w-full sm:w-auto">
+                  View Our Portfolio
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Core Values */}
-      <div className="bg-white py-20 border-y border-[#E8E0D6]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <Badge variant="gold">Our Pillars</Badge>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-              The Values That Guide Our Craft
-            </h2>
-          </div>
+      {/* Values Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="text-[#B8955A] font-semibold text-xs uppercase tracking-widest block mb-2">
+            Our Guiding Pillars
+          </span>
+          <h2 className="font-serif text-3xl font-bold text-[#28231F]">
+            The Principles That Define Us
+          </h2>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((val, idx) => (
-              <Card key={idx} className="p-6 bg-[#FAF7F2] border border-[#E8E0D6] space-y-3">
-                <h3 className="font-serif text-lg font-bold text-[#24211F]">{val.title}</h3>
-                <p className="text-xs text-[#77716B] leading-relaxed">{val.desc}</p>
-              </Card>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {values.map((v, i) => (
+            <div
+              key={i}
+              className="bg-white p-7 rounded-2xl border border-[#E8E0D6] shadow-xs hover:border-[#B8955A] transition-all"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center mb-4">
+                {v.icon}
+              </div>
+              <h3 className="font-serif font-bold text-lg text-[#28231F] mb-2">{v.title}</h3>
+              <p className="text-xs sm:text-sm text-[#77716B] leading-relaxed">{v.desc}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* CTA Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-        <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-          Let Us Create Magic for Your Special Occasion
+      {/* Contact Prompt */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center bg-white rounded-3xl p-10 border border-[#E8E0D6] shadow-sm">
+        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#28231F] mb-3">
+          Have an Upcoming Celebration?
         </h2>
-        <p className="max-w-xl mx-auto text-sm text-[#77716B]">
-          Schedule a consultation with our senior planners to explore thematic decor concepts tailored to your venue.
+        <p className="text-sm text-[#77716B] mb-6 max-w-lg mx-auto">
+          Contact our team directly on WhatsApp to explore creative themes, check calendar availability, and receive a customized quote.
         </p>
-        <Link to="/book-event">
-          <Button variant="gold" size="lg" rightIcon={<ArrowRight className="w-5 h-5" />}>
-            Book Your Free Consultation
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <WhatsAppButton size="md" label="Enquire on WhatsApp" />
+          <a
+            href={`tel:${settings?.phone || '+919842187654'}`}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#E8E0D6] text-sm font-semibold text-[#28231F] hover:bg-[#FAF7F2] transition-colors"
+          >
+            <Phone className="w-4 h-4 text-[#B8955A]" />
+            <span>Call {settings?.phone || '+91 98421 87654'}</span>
+          </a>
+        </div>
       </div>
     </div>
   );

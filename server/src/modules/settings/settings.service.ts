@@ -1,61 +1,111 @@
 import { db } from '../../config/database.js';
 
+export interface SiteSettingsDict {
+  business_name?: string;
+  tagline?: string;
+  logo_url?: string;
+  whatsapp_number?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  about_text?: string;
+  instagram_url?: string;
+  facebook_url?: string;
+  youtube_url?: string;
+  footer_text?: string;
+  // Aliases for frontend convenience
+  businessName?: string;
+  whatsappNumber?: string;
+  logoUrl?: string;
+  aboutText?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  footerText?: string;
+  [key: string]: any;
+}
+
 export class SettingsService {
-  static async getSettings() {
-    let settings = await db.queryOne(`SELECT * FROM "BusinessSettings" LIMIT 1`);
-    if (!settings) {
-      settings = await db.queryOne(
-        `INSERT INTO "BusinessSettings" (
-          id, "businessName", tagline, phone, "whatsappNumber", email, address, city, state, pincode
-        ) VALUES (
-          'default-settings', 'Sathuragiri Decoration', 'Every Celebration, Beautifully Crafted.',
-          '+91 98421 87654', '+919842187654', 'contact@sathuragiridecoration.com',
-          'Plot No. 45, Temple View Avenue, Near Ring Road, Madurai', 'Madurai', 'Tamil Nadu', '625009'
-        )
-        ON CONFLICT (id) DO NOTHING
-        RETURNING *`
-      );
-      if (!settings) {
-        settings = await db.queryOne(`SELECT * FROM "BusinessSettings" LIMIT 1`);
-      }
-    }
-    return settings;
-  }
-
-  static async updateSettings(data: any) {
-    const settings = await this.getSettings();
-    const allowedKeys = [
-      'businessName', 'tagline', 'logoUrl', 'phone', 'alternatePhone', 'whatsappNumber',
-      'email', 'address', 'city', 'state', 'pincode', 'mapsEmbedUrl', 'primaryGold',
-      'gstNumber', 'advancePercentageDefault', 'currencySymbol', 'termsDefault',
-      'socialInstagram', 'socialFacebook', 'socialYoutube'
-    ];
-
-    const fields: string[] = [];
-    const values: any[] = [];
-    let idx = 1;
-
-    for (const key of allowedKeys) {
-      if (data[key] !== undefined) {
-        fields.push(`"${key}" = $${idx}`);
-        values.push(data[key]);
-        idx++;
-      }
-    }
-
-    if (fields.length === 0) {
-      return settings;
-    }
-
-    values.push(settings.id);
-    const updated = await db.queryOne(
-      `UPDATE "BusinessSettings"
-       SET ${fields.join(', ')}
-       WHERE id = $${idx}
-       RETURNING *`,
-      values
+  static async getSettings(): Promise<SiteSettingsDict> {
+    const rows = await db.query<{ setting_key: string; setting_value: string }>(
+      `SELECT setting_key, setting_value FROM public.site_settings`
     );
 
-    return updated;
+    const dict: Record<string, string> = {};
+    for (const row of rows) {
+      dict[row.setting_key] = row.setting_value;
+    }
+
+    // Default fallbacks if empty
+    const businessName = dict['business_name'] || 'Sathuragiri Decoration';
+    const tagline = dict['tagline'] || 'Every Celebration, Beautifully Crafted.';
+    const logoUrl = dict['logo_url'] || '/logo-gold.svg';
+    const whatsappNumber = dict['whatsapp_number'] || '+919842187654';
+    const phone = dict['phone'] || '+91 98421 87654';
+    const email = dict['email'] || 'contact@sathuragiridecoration.com';
+    const address =
+      dict['address'] ||
+      '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu - 626117, India';
+    const aboutText =
+      dict['about_text'] ||
+      'At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. From opulent South Indian wedding mandaps and royal receptions to joyous birthday themes and traditional baby showers, our master artisans bring perfection, elegance, and divinity to every stage.';
+    const instagramUrl = dict['instagram_url'] || 'https://instagram.com/sathuragiridecoration';
+    const facebookUrl = dict['facebook_url'] || 'https://facebook.com/sathuragiridecoration';
+    const youtubeUrl = dict['youtube_url'] || 'https://youtube.com/@sathuragiridecoration';
+    const footerText =
+      dict['footer_text'] || '© 2026 Sathuragiri Decoration. Every Celebration, Beautifully Crafted. All rights reserved.';
+
+    return {
+      ...dict,
+      business_name: businessName,
+      tagline,
+      logo_url: logoUrl,
+      whatsapp_number: whatsappNumber,
+      phone,
+      email,
+      address,
+      about_text: aboutText,
+      instagram_url: instagramUrl,
+      facebook_url: facebookUrl,
+      youtube_url: youtubeUrl,
+      footer_text: footerText,
+      // CamelCase convenience aliases
+      businessName,
+      whatsappNumber,
+      logoUrl,
+      aboutText,
+      instagramUrl,
+      facebookUrl,
+      footerText,
+    };
+  }
+
+  static async updateSettings(data: Record<string, any>): Promise<SiteSettingsDict> {
+    const keyMapping: Record<string, string> = {
+      businessName: 'business_name',
+      whatsappNumber: 'whatsapp_number',
+      logoUrl: 'logo_url',
+      aboutText: 'about_text',
+      instagramUrl: 'instagram_url',
+      facebookUrl: 'facebook_url',
+      youtubeUrl: 'youtube_url',
+      footerText: 'footer_text',
+    };
+
+    for (const [rawKey, rawVal] of Object.entries(data)) {
+      if (rawVal === undefined || rawVal === null) continue;
+      const key = keyMapping[rawKey] || rawKey;
+      const val = String(rawVal);
+
+      await db.query(
+        `INSERT INTO public.site_settings (setting_key, setting_value)
+         VALUES ($1, $2)
+         ON CONFLICT (setting_key) DO UPDATE
+         SET setting_value = EXCLUDED.setting_value,
+             updated_at = CURRENT_TIMESTAMP`,
+        [key, val]
+      );
+    }
+
+    return this.getSettings();
   }
 }

@@ -1,127 +1,247 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import { app } from '../app.js';
-import { sanitizeCsvField } from '../utils/csv.js';
 
-describe('Sathuragiri Decoration - Backend API Test Suite', () => {
+describe('Sathuragiri Decoration - Portfolio & Admin API Test Suite', () => {
   let authToken = '';
+  let testCategoryId = '';
+  let testProjectId = '';
 
-  describe('1. Health and Public Discovery APIs', () => {
-    it('GET /health should return 200 OK with business info', async () => {
+  describe('1. Health and Public Website APIs', () => {
+    it('GET /health should return 200 OK with Sathuragiri Decoration business info', async () => {
       const res = await request(app).get('/health');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.business).toBe('Sathuragiri Decoration');
+      expect(res.body.data.tagline).toBe('Every Celebration, Beautifully Crafted.');
     });
 
-    it('GET /api/v1/services should return active services list', async () => {
-      const res = await request(app).get('/api/v1/services');
+    it('GET /api/categories should return all active event categories', async () => {
+      const res = await request(app).get('/api/categories');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.length).toBeGreaterThan(0);
+      // All public categories must be active
+      res.body.data.forEach((cat: any) => {
+        expect(cat.is_active).toBe(true);
+      });
     });
 
-    it('GET /api/v1/packages should return event packages', async () => {
-      const res = await request(app).get('/api/v1/packages');
+    it('GET /api/categories/:slug should return category details and published projects', async () => {
+      const res = await request(app).get('/api/categories/wedding-decoration');
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.slug).toBe('wedding-decoration');
+      expect(Array.isArray(res.body.data.projects)).toBe(true);
+    });
+
+    it('GET /api/portfolio should return published portfolio projects with images', async () => {
+      const res = await request(app).get('/api/portfolio');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBeGreaterThan(0);
+      const proj = res.body.data[0];
+      expect(proj.title).toBeDefined();
+      expect(proj.status).toBe('published');
+      expect(Array.isArray(proj.images)).toBe(true);
     });
 
-    it('GET /api/v1/portfolio should return portfolio items', async () => {
-      const res = await request(app).get('/api/v1/portfolio');
+    it('GET /api/portfolio/:slug should return a single project with multiple photographs', async () => {
+      const res = await request(app).get('/api/portfolio/royal-chettinad-kalyana-mandapam');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.slug).toBe('royal-chettinad-kalyana-mandapam');
+      expect(Array.isArray(res.body.data.images)).toBe(true);
+    });
+
+    it('GET /api/settings/public should return configured WhatsApp number and contact info', async () => {
+      const res = await request(app).get('/api/settings/public');
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.business_name).toBe('Sathuragiri Decoration');
+      expect(res.body.data.whatsapp_number).toBeDefined();
     });
   });
 
-  describe('2. Authentication & Authorization Security', () => {
-    it('should reject login with invalid password', async () => {
-      const res = await request(app).post('/api/v1/auth/login').send({
+  describe('2. Administrator Authentication & Authorization', () => {
+    it('POST /api/admin/auth/login should reject invalid credentials', async () => {
+      const res = await request(app).post('/api/admin/auth/login').send({
         email: 'admin@sathuragiridecoration.com',
-        password: 'WrongPassword999',
+        password: 'IncorrectPassword',
       });
       expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
     });
 
-    it('should login successfully with valid admin credentials and return JWT token', async () => {
-      const res = await request(app).post('/api/v1/auth/login').send({
+    it('POST /api/admin/auth/login should authenticate valid admin and return JWT', async () => {
+      const res = await request(app).post('/api/admin/auth/login').send({
         email: 'admin@sathuragiridecoration.com',
         password: 'Admin@12345',
       });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.user.role).toBe('OWNER');
       expect(res.body.data.token).toBeDefined();
+      expect(res.body.data.user.email).toBe('admin@sathuragiridecoration.com');
       authToken = res.body.data.token;
     });
 
-    it('should reject unauthenticated access to admin endpoints', async () => {
-      const res = await request(app).get('/api/v1/dashboard/kpis');
-      expect(res.status).toBe(401);
-      expect(res.body.success).toBe(false);
-    });
-
-    it('should permit authorized access to admin KPIs with bearer token', async () => {
+    it('GET /api/admin/auth/me should return admin profile when authenticated', async () => {
       const res = await request(app)
-        .get('/api/v1/dashboard/kpis')
+        .get('/api/admin/auth/me')
         .set('Authorization', `Bearer ${authToken}`);
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.kpis).toBeDefined();
-      expect(res.body.data.kpis.totalEnquiries).toBeDefined();
-      expect(res.body.data.kpis.totalRevenueReceived).toBeDefined();
-    });
-  });
-
-  describe('3. Public Event Enquiry Creation', () => {
-    it('should create an enquiry with reference and sanitize inputs', async () => {
-      const newEnquiry = {
-        name: 'Venkatesh & Ananya Wedding',
-        phone: '+91 98450 77889',
-        email: 'venkatesh@example.com',
-        eventType: 'WEDDING',
-        eventTitle: 'Traditional Tamil Brahmin Kalyanam',
-        eventDate: '2026-11-15T09:00:00.000Z',
-        venueName: 'Sri Raja Rajeshwari Kalyana Mahal',
-        venueCity: 'Madurai',
-        guestCount: 650,
-        isOutdoor: false,
-        budgetRange: '₹3,00,000 - ₹5,00,000',
-        preferredContactMethod: 'WhatsApp',
-      };
-
-      const res = await request(app).post('/api/v1/enquiries').send(newEnquiry);
-      expect(res.status).toBe(201);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.reference).toMatch(/^ENQ-/);
-      expect(res.body.data.status).toBe('NEW');
+      expect(res.body.data.user).toBeDefined();
     });
 
-    it('should reject enquiry with invalid phone number', async () => {
-      const invalidEnquiry = {
-        name: 'Test Customer',
-        phone: '123', // invalid
-        eventType: 'WEDDING',
-        eventDate: '2026-11-15T09:00:00.000Z',
-      };
-
-      const res = await request(app).post('/api/v1/enquiries').send(invalidEnquiry);
-      expect(res.status).toBe(400);
+    it('Protected endpoints should reject unauthenticated visitors', async () => {
+      const res = await request(app).get('/api/admin/stats');
+      expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
     });
   });
 
-  describe('4. Security & CSV Formula Injection Sanitization', () => {
-    it('should escape dangerous formula leading characters in CSV export', () => {
-      expect(sanitizeCsvField('=SUM(A1:A10)')).toBe('"\'=SUM(A1:A10)"');
-      expect(sanitizeCsvField('+cmd|/c calc.exe')).toBe('"\' +cmd|/c calc.exe"'.replace(' ', ''));
-      expect(sanitizeCsvField('-1000')).toBe('"\' -1000"'.replace(' ', ''));
-      expect(sanitizeCsvField('@eval()')).toBe('"\' @eval()"'.replace(' ', ''));
-      expect(sanitizeCsvField('Standard Wedding Mandapam')).toBe('"Standard Wedding Mandapam"');
+  describe('3. Admin Dashboard Statistics from Supabase', () => {
+    it(
+      'GET /api/admin/stats should return real portfolio metrics from Supabase',
+      async () => {
+        const res = await request(app)
+          .get('/api/admin/stats')
+          .set('Authorization', `Bearer ${authToken}`);
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(typeof res.body.data.totalProjects).toBe('number');
+        expect(typeof res.body.data.publishedProjects).toBe('number');
+        expect(typeof res.body.data.draftProjects).toBe('number');
+        expect(typeof res.body.data.activeCategories).toBe('number');
+      },
+      15000
+    );
+  });
+
+  describe('4. Admin Category Management CRUD', () => {
+    it('POST /api/admin/categories should create a new event category', async () => {
+      const res = await request(app)
+        .post('/api/admin/categories')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Test Temporary Category',
+          slug: `test-cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          description: 'A test category for automated suite validation',
+          cover_image_url: 'https://images.unsplash.com/photo-1519741497674-611481863552',
+          display_order: 99,
+          is_active: true,
+        });
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBeDefined();
+      testCategoryId = res.body.data.id;
+    });
+
+    it('PUT /api/admin/categories/:id should update category details', async () => {
+      const res = await request(app)
+        .put(`/api/admin/categories/${testCategoryId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Updated Test Category',
+          display_order: 100,
+        });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.name).toBe('Updated Test Category');
+    });
+
+    it('DELETE /api/admin/categories/:id should safely delete an unused category', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/categories/${testCategoryId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
+
+  describe('5. Admin Portfolio Management CRUD', () => {
+    it('POST /api/admin/portfolio should create a project with multiple photographs', async () => {
+      // Fetch a valid category
+      const catRes = await request(app).get('/api/categories');
+      const catId = catRes.body.data[0].id;
+
+      const res = await request(app)
+        .post('/api/admin/portfolio')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Automated Test Luxury Mandap',
+          slug: `test-mandap-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          category_id: catId,
+          description: 'Test mandapam setup description',
+          location: 'Madurai, Tamil Nadu',
+          event_date: '2026-03-15',
+          cover_image_url: 'https://images.unsplash.com/photo-1519741497674-611481863552',
+          status: 'draft',
+          display_order: 50,
+          images: [
+            {
+              image_url: 'https://images.unsplash.com/photo-1519741497674-611481863552',
+              alt_text: 'Test Photo 1',
+            },
+            {
+              image_url: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622',
+              alt_text: 'Test Photo 2',
+            },
+          ],
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBeDefined();
+      expect(res.body.data.status).toBe('draft');
+      testProjectId = res.body.data.id;
+    });
+
+    it('PUT /api/admin/portfolio/:id should update and publish the project', async () => {
+      const res = await request(app)
+        .put(`/api/admin/portfolio/${testProjectId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Published Test Luxury Mandap',
+          status: 'published',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('published');
+    });
+
+    it('DELETE /api/admin/portfolio/:id should delete the project and cascade photographs', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/portfolio/${testProjectId}`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+  });
+
+  describe('6. Admin Settings Persistence', () => {
+    it('GET and PUT /api/admin/settings should persist business settings in Supabase', async () => {
+      const getRes = await request(app)
+        .get('/api/admin/settings')
+        .set('Authorization', `Bearer ${authToken}`);
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.success).toBe(true);
+
+      const putRes = await request(app)
+        .put('/api/admin/settings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          whatsapp_number: '+919842187654',
+          business_name: 'Sathuragiri Decoration',
+        });
+      expect(putRes.status).toBe(200);
+      expect(putRes.body.success).toBe(true);
+      expect(putRes.body.data.whatsapp_number).toBe('+919842187654');
     });
   });
 });

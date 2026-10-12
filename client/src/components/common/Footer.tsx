@@ -2,12 +2,24 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Instagram, Facebook, Youtube, Sparkles, Heart } from 'lucide-react';
 import { Logo } from './Logo';
+import { WhatsAppButton } from './WhatsAppButton';
 import { useSettings } from '../../context/SettingsContext';
 
 export const Footer: React.FC = () => {
   const { settings } = useSettings();
-
   const currentYear = new Date().getFullYear();
+
+  const categories = [
+    { name: 'Wedding Decoration', slug: 'wedding-decoration' },
+    { name: 'Reception Decoration', slug: 'reception-decoration' },
+    { name: 'Engagement', slug: 'engagement' },
+    { name: 'Birthday Celebration', slug: 'birthday-celebration' },
+    { name: 'Baby Shower', slug: 'baby-shower' },
+    { name: 'Traditional Functions', slug: 'traditional-functions' },
+    { name: 'Photoshoots', slug: 'photoshoots' },
+    { name: 'Catering', slug: 'catering' },
+    { name: 'Event Stalls', slug: 'event-stalls' },
+  ];
 
   return (
     <footer className="bg-[#1A1816] text-[#CECDCC] pt-16 pb-8 border-t border-[#3D3835]">
@@ -17,11 +29,19 @@ export const Footer: React.FC = () => {
           <div className="space-y-4">
             <Logo variant="light" size="lg" />
             <p className="text-sm leading-relaxed text-[#AFAEA9] mt-3">
-              South India’s premier luxury wedding planners and event decorators. We transform your most auspicious occasions into breathtaking visual masterpieces with royal mandapams, exotic florals, and impeccable hospitality.
+              {settings?.about_text ||
+                'South India’s premier luxury event decorators. Transforming auspicious occasions into timeless masterpieces with royal mandapams, exotic florals, and unforgettable celebration styling.'}
             </p>
-            <div className="flex items-center gap-3 pt-2">
+            <div className="pt-2">
+              <WhatsAppButton
+                size="sm"
+                label="Direct WhatsApp Enquiry"
+                className="rounded-xl w-full sm:w-auto"
+              />
+            </div>
+            <div className="flex items-center gap-3 pt-3">
               <a
-                href={settings?.socialInstagram || '#'}
+                href={settings?.instagram_url || settings?.socialInstagram || 'https://instagram.com/sathuragiridecoration'}
                 target="_blank"
                 rel="noreferrer"
                 className="w-9 h-9 rounded-full bg-[#2E2A27] flex items-center justify-center text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-colors"
@@ -30,7 +50,7 @@ export const Footer: React.FC = () => {
                 <Instagram className="w-4 h-4" />
               </a>
               <a
-                href={settings?.socialFacebook || '#'}
+                href={settings?.facebook_url || settings?.socialFacebook || 'https://facebook.com/sathuragiridecoration'}
                 target="_blank"
                 rel="noreferrer"
                 className="w-9 h-9 rounded-full bg-[#2E2A27] flex items-center justify-center text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-colors"
@@ -39,7 +59,7 @@ export const Footer: React.FC = () => {
                 <Facebook className="w-4 h-4" />
               </a>
               <a
-                href={settings?.socialYoutube || '#'}
+                href={settings?.youtube_url || settings?.socialYoutube || 'https://youtube.com/@sathuragiridecoration'}
                 target="_blank"
                 rel="noreferrer"
                 className="w-9 h-9 rounded-full bg-[#2E2A27] flex items-center justify-center text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-colors"
@@ -50,47 +70,27 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Core Services */}
+          {/* Event Categories */}
           <div>
             <h4 className="font-serif text-white text-base font-bold tracking-wider mb-4 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#B8955A]" />
-              Our Specializations
+              Event Services
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#AFAEA9]">
-              <li>
-                <Link to="/services/royal-muhurtham-mandapam" className="hover:text-[#B8955A] transition-colors">
-                  Traditional Muhurtham Mandapams
-                </Link>
-              </li>
-              <li>
-                <Link to="/services/grand-floral-reception-stage" className="hover:text-[#B8955A] transition-colors">
-                  Grand Reception Stages
-                </Link>
-              </li>
-              <li>
-                <Link to="/services/haldi-mehndi-festive-setup" className="hover:text-[#B8955A] transition-colors">
-                  Haldi, Mehndi & Sangeet Sets
-                </Link>
-              </li>
-              <li>
-                <Link to="/services/cinematic-wedding-film-photography" className="hover:text-[#B8955A] transition-colors">
-                  Candid Photography & 4K Drone
-                </Link>
-              </li>
-              <li>
-                <Link to="/services/grand-south-indian-leaf-feast" className="hover:text-[#B8955A] transition-colors">
-                  Royal Leaf Feast & Catering
-                </Link>
-              </li>
-              <li>
-                <Link to="/services/imperial-floral-tunnel-entrance" className="hover:text-[#B8955A] transition-colors">
-                  Entrance Archways & Floral Tunnels
-                </Link>
-              </li>
+            <ul className="space-y-2 text-sm text-[#AFAEA9]">
+              {categories.map((cat) => (
+                <li key={cat.slug}>
+                  <Link
+                    to={`/portfolio?category=${cat.slug}`}
+                    className="hover:text-[#B8955A] transition-colors"
+                  >
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Quick Links */}
+          {/* Quick Navigation */}
           <div>
             <h4 className="font-serif text-white text-base font-bold tracking-wider mb-4 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#B8955A]" />
@@ -98,13 +98,18 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2.5 text-sm text-[#AFAEA9]">
               <li>
-                <Link to="/packages" className="hover:text-[#B8955A] transition-colors">
-                  Wedding & Event Packages
+                <Link to="/" className="hover:text-[#B8955A] transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link to="/services" className="hover:text-[#B8955A] transition-colors">
+                  All Services & Categories
                 </Link>
               </li>
               <li>
                 <Link to="/portfolio" className="hover:text-[#B8955A] transition-colors">
-                  Real Weddings & Portfolio
+                  Decoration Portfolio & Gallery
                 </Link>
               </li>
               <li>
@@ -113,23 +118,13 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/book-event" className="hover:text-[#B8955A] transition-colors">
-                  Get a Free Custom Quote
-                </Link>
-              </li>
-              <li>
                 <Link to="/contact" className="hover:text-[#B8955A] transition-colors">
-                  Contact & Venue Consultations
+                  Contact & Venue Enquiries
                 </Link>
               </li>
               <li>
-                <Link to="/privacy-policy" className="hover:text-[#B8955A] transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className="hover:text-[#B8955A] transition-colors">
-                  Terms & Conditions
+                <Link to="/admin/login" className="hover:text-[#B8955A] transition-colors text-xs text-gray-500">
+                  Staff / Admin Portal
                 </Link>
               </li>
             </ul>
@@ -139,14 +134,13 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="font-serif text-white text-base font-bold tracking-wider mb-4 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#B8955A]" />
-              Reach Us
+              Contact Information
             </h4>
             <div className="space-y-3.5 text-sm text-[#AFAEA9]">
               <div className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-[#B8955A] shrink-0 mt-1" />
-                <span>
-                  {settings?.address || 'Plot No. 45, Temple View Avenue'},<br />
-                  {settings?.city || 'Madurai'}, {settings?.state || 'Tamil Nadu'} - {settings?.pincode || '625009'}
+                <span className="leading-relaxed">
+                  {settings?.address || '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu, India'}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -155,39 +149,26 @@ export const Footer: React.FC = () => {
                   {settings?.phone || '+91 98421 87654'}
                 </a>
               </div>
-              {settings?.alternatePhone && (
-                <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-[#B8955A] shrink-0" />
-                  <a href={`tel:${settings.alternatePhone}`} className="hover:text-white transition-colors">
-                    {settings.alternatePhone}
-                  </a>
-                </div>
-              )}
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-[#B8955A] shrink-0" />
                 <a href={`mailto:${settings?.email || 'contact@sathuragiridecoration.com'}`} className="hover:text-white transition-colors">
                   {settings?.email || 'contact@sathuragiridecoration.com'}
                 </a>
               </div>
-              {settings?.gstNumber && (
-                <div className="pt-2 text-xs text-gray-500">
-                  GSTIN: <span className="text-[#B8955A] font-mono">{settings.gstNumber}</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#77716B]">
-          <p>© {currentYear} {settings?.businessName || 'Sathuragiri Decoration'}. All rights reserved.</p>
+          <p>{settings?.footer_text || `© ${currentYear} Sathuragiri Decoration. Every Celebration, Beautifully Crafted. All rights reserved.`}</p>
           <p className="flex items-center gap-1">
-            Crafted with passion for memorable celebrations <Heart className="w-3.5 h-3.5 text-[#B8955A] inline" />
+            Crafted for Memorable Celebrations <Heart className="w-3.5 h-3.5 text-[#B8955A] inline" />
           </p>
           <div className="flex items-center gap-4">
-            <Link to="/privacy-policy" className="hover:text-[#B8955A]">Privacy</Link>
+            <Link to="/about" className="hover:text-[#B8955A]">About Us</Link>
             <span>•</span>
-            <Link to="/terms" className="hover:text-[#B8955A]">Terms</Link>
+            <Link to="/contact" className="hover:text-[#B8955A]">Contact</Link>
             <span>•</span>
             <Link to="/admin/login" className="text-[#B8955A] hover:underline">Admin Login</Link>
           </div>

@@ -1,264 +1,272 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Phone, Mail, MapPin, MessageCircle, Send, CheckCircle2, Clock } from 'lucide-react';
-import { Badge } from '../../components/common/Badge';
-import { Button } from '../../components/common/Button';
-import { Input } from '../../components/common/Input';
-import { Textarea } from '../../components/common/Textarea';
-import { useToast } from '../../context/ToastContext';
+import { Phone, Mail, MapPin, MessageCircle, Send, Sparkles, Instagram, Facebook, Youtube, Clock } from 'lucide-react';
+import { WhatsAppButton } from '../../components/common/WhatsAppButton';
 import { useSettings } from '../../context/SettingsContext';
-import { api } from '../../lib/api';
-
-const contactFormSchema = z.object({
-  name: z.string().min(2, 'Please enter your name'),
-  phone: z.string().min(10, 'Please enter a valid phone number (at least 10 digits)'),
-  email: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
-  message: z.string().min(5, 'Please write your message or event requirements'),
-});
-
-type ContactFormData = z.infer<typeof contactFormSchema>;
+import { buildWhatsAppUrl } from '../../lib/whatsapp';
 
 export const ContactPage: React.FC = () => {
   const { settings } = useSettings();
-  const { success, error } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ContactFormData>({
-    resolver: zodResolver(contactFormSchema),
-  });
+  const [name, setName] = useState('');
+  const [eventType, setEventType] = useState('Wedding Decoration');
+  const [eventDate, setEventDate] = useState('');
+  const [location, setLocation] = useState('');
+  const [notes, setNotes] = useState('');
 
-  const onSubmit = async (data: ContactFormData) => {
-    setIsSubmitting(true);
-    try {
-      // Submit as a lightweight enquiry
-      await api.post('/enquiries/public', {
-        name: data.name,
-        phone: data.phone,
-        email: data.email,
-        eventType: 'General Enquiry / Consultation',
-        eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        customRequirements: data.message,
-        preferredContactMethod: 'Phone',
-      });
+  const handleSendWhatsApp = (e: React.FormEvent) => {
+    e.preventDefault();
+    let text = `Hello Sathuragiri Decoration!`;
+    if (name.trim()) text += ` I am ${name.trim()}.`;
+    text += ` I would like to enquire about your ${eventType} services.`;
+    if (eventDate) text += ` Event Date: ${eventDate}.`;
+    if (location.trim()) text += ` Venue / City: ${location.trim()}.`;
+    if (notes.trim()) text += ` Requirements: ${notes.trim()}.`;
+    text += ` Please share availability, design concepts, and pricing details.`;
 
-      setIsSubmitted(true);
-      success('Thank you! Your message has been received. We will contact you shortly.');
-      reset();
-    } catch (err: any) {
-      error(err.message || 'Failed to send message. Please try again or call us directly.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    const url = buildWhatsAppUrl(settings?.whatsappNumber, text);
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const rawNumber = settings?.whatsappNumber || '+919842187654';
-  const cleanNumber = rawNumber.replace(/[^0-9]/g, '');
-  const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
-    'Hello Sathuragiri Decoration! I would like to schedule a consultation.'
-  )}`;
-
   return (
-    <div className="pt-28 pb-20 space-y-16">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-        <Badge variant="gold">Get in Touch</Badge>
-        <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#24211F]">
+    <div className="pt-32 pb-24 min-h-screen bg-[#FAF7F2]">
+      {/* Header Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 mb-16">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#B8955A]/10 border border-[#B8955A]/30 text-xs font-semibold uppercase tracking-widest text-[#B8955A]">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Get in Touch with Our Team</span>
+        </div>
+        <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#28231F]">
           Contact Sathuragiri Decoration
         </h1>
-        <p className="max-w-2xl mx-auto text-sm sm:text-base text-[#77716B]">
-          Have questions about dates, mandapam layouts, or custom catering? We'd love to assist you.
+        <p className="max-w-2xl mx-auto text-sm sm:text-base text-[#77716B] leading-relaxed">
+          WhatsApp is our primary consultation channel. Share your celebration requirements below to connect directly with our decoration coordinators.
         </p>
       </div>
 
-      {/* Main Grid: Contact Info on Left, Form on Right */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Left Info Cards */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white p-8 rounded-3xl border border-[#E8E0D6] shadow-sm space-y-6">
-              <h3 className="font-serif text-2xl font-bold text-[#24211F]">
-                Reach Our Office
-              </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Left Column: Direct WhatsApp Form */}
+          <div className="bg-white rounded-3xl p-8 sm:p-10 border border-[#E8E0D6] shadow-sm space-y-6">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-[#B8955A]">
+                Instant Enquiry
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#28231F] mt-1">
+                Compose WhatsApp Message
+              </h2>
+              <p className="text-xs sm:text-sm text-[#77716B] mt-1">
+                Fill in your celebration details below. Clicking "Open WhatsApp" will launch WhatsApp with your prefilled message ready to send!
+              </p>
+            </div>
+
+            <form onSubmit={handleSendWhatsApp} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#28231F] mb-1.5">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Ramesh Kumar"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E8E0D6] text-sm focus:outline-none focus:ring-2 focus:ring-[#B8955A]/30 focus:border-[#B8955A]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#28231F] mb-1.5">
+                    Service / Event Category
+                  </label>
+                  <select
+                    value={eventType}
+                    onChange={(e) => setEventType(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E8E0D6] text-sm focus:outline-none focus:ring-2 focus:ring-[#B8955A]/30 focus:border-[#B8955A] bg-white"
+                  >
+                    <option value="Wedding Decoration">Wedding Decoration</option>
+                    <option value="Reception Decoration">Reception Decoration</option>
+                    <option value="Engagement">Engagement</option>
+                    <option value="Birthday Celebration">Birthday Celebration</option>
+                    <option value="Baby Shower">Baby Shower</option>
+                    <option value="Traditional Functions">Traditional Functions</option>
+                    <option value="Photoshoots">Photoshoots</option>
+                    <option value="Catering">Catering</option>
+                    <option value="Event Stalls">Event Stalls</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#28231F] mb-1.5">
+                    Planned Event Date
+                  </label>
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#E8E0D6] text-sm focus:outline-none focus:ring-2 focus:ring-[#B8955A]/30 focus:border-[#B8955A]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#28231F] mb-1.5">
+                  Venue / Location / City
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Madurai, Rajapalayam, Mandapam name..."
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E8E0D6] text-sm focus:outline-none focus:ring-2 focus:ring-[#B8955A]/30 focus:border-[#B8955A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#28231F] mb-1.5">
+                  Decor Requirements / Notes (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Tell us about your theme preferences, estimated guest count, or specific stage requirements..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E8E0D6] text-sm focus:outline-none focus:ring-2 focus:ring-[#B8955A]/30 focus:border-[#B8955A]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 px-6 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-5 h-5 fill-current" />
+                <span>Open WhatsApp Enquiry</span>
+              </button>
+            </form>
+          </div>
+
+          {/* Right Column: Contact Details & Office Address */}
+          <div className="space-y-8">
+            <div className="bg-white rounded-3xl p-8 sm:p-10 border border-[#E8E0D6] shadow-sm space-y-6">
+              <h2 className="font-serif text-2xl font-bold text-[#28231F]">
+                Business Details
+              </h2>
 
               <div className="space-y-5 text-sm text-[#56504A]">
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#EBDDBF] flex items-center justify-center text-[#B8955A] shrink-0">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center shrink-0 text-[#B8955A]">
                     <MapPin className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#24211F]">Headquarters & Studio</h4>
-                    <p className="text-xs text-[#77716B] mt-0.5 leading-relaxed">
-                      {settings?.address || 'Plot No. 45, Temple View Avenue'},<br />
-                      {settings?.city || 'Madurai'}, {settings?.state || 'Tamil Nadu'} - {settings?.pincode || '625009'}
+                    <p className="font-semibold text-[#28231F]">Studio & Workshop Address</p>
+                    <p className="text-xs sm:text-sm text-[#77716B] mt-0.5 leading-relaxed">
+                      {settings?.address || '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu, India'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#EBDDBF] flex items-center justify-center text-[#B8955A] shrink-0">
-                    <Phone className="w-5 h-5" />
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center shrink-0 text-[#B8955A]">
+                    <MessageCircle className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#24211F]">Direct Phone</h4>
-                    <a
-                      href={`tel:${settings?.phone || '+919842187654'}`}
-                      className="text-xs text-[#B8955A] hover:underline font-semibold block mt-0.5"
-                    >
-                      {settings?.phone || '+91 98421 87654'}
-                    </a>
-                    {settings?.alternatePhone && (
-                      <a
-                        href={`tel:${settings.alternatePhone}`}
-                        className="text-xs text-[#77716B] hover:underline block mt-0.5"
-                      >
-                        {settings.alternatePhone}
-                      </a>
-                    )}
+                    <p className="font-semibold text-[#28231F]">Official WhatsApp Number</p>
+                    <p className="text-xs sm:text-sm text-[#77716B] mt-0.5">
+                      {settings?.whatsapp_number || settings?.whatsappNumber || '+91 98421 87654'}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#EBDDBF] flex items-center justify-center text-[#B8955A] shrink-0">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center shrink-0 text-[#B8955A]">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[#28231F]">Telephone Enquiries</p>
+                    <a
+                      href={`tel:${settings?.phone || '+919842187654'}`}
+                      className="text-xs sm:text-sm text-[#B8955A] hover:underline font-semibold block mt-0.5"
+                    >
+                      {settings?.phone || '+91 98421 87654'}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center shrink-0 text-[#B8955A]">
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#24211F]">Email Enquiries</h4>
+                    <p className="font-semibold text-[#28231F]">Email Enquiries</p>
                     <a
                       href={`mailto:${settings?.email || 'contact@sathuragiridecoration.com'}`}
-                      className="text-xs text-[#B8955A] hover:underline font-semibold block mt-0.5"
+                      className="text-xs sm:text-sm text-[#77716B] hover:text-[#B8955A] block mt-0.5"
                     >
                       {settings?.email || 'contact@sathuragiridecoration.com'}
                     </a>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#EBDDBF] flex items-center justify-center text-[#B8955A] shrink-0">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center shrink-0 text-[#B8955A]">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#24211F]">Consultation Hours</h4>
-                    <p className="text-xs text-[#77716B] mt-0.5">
-                      Monday – Sunday: 8:00 AM – 9:00 PM (IST)
+                    <p className="font-semibold text-[#28231F]">Working Hours</p>
+                    <p className="text-xs sm:text-sm text-[#77716B] mt-0.5">
+                      Monday to Sunday: 8:00 AM – 9:00 PM (WhatsApp available 24/7)
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Direct WhatsApp Button */}
-              <div className="pt-4">
-                <a href={whatsappUrl} target="_blank" rel="noreferrer" className="block">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full bg-[#EBF7F0] text-[#24845D] hover:bg-[#D9F2E2] border border-[#24845D]/30"
-                    leftIcon={<MessageCircle className="w-4 h-4" />}
+              {/* Social Media Links */}
+              <div className="pt-4 border-t border-[#E8E0D6]">
+                <p className="text-xs font-semibold text-[#28231F] mb-3">Connect on Social Media</p>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={settings?.instagram_url || 'https://instagram.com/sathuragiridecoration'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-colors"
+                    aria-label="Instagram"
                   >
-                    Chat Directly on WhatsApp
-                  </Button>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Contact Form */}
-          <div className="lg:col-span-7">
-            <div className="bg-white p-8 sm:p-10 rounded-3xl border border-[#E8E0D6] shadow-sm space-y-6">
-              <div>
-                <h3 className="font-serif text-2xl font-bold text-[#24211F]">Send Us a Message</h3>
-                <p className="text-xs text-[#77716B] mt-1">
-                  Fill out the details below and our team will get back to you within 2 hours.
-                </p>
-              </div>
-
-              {isSubmitted ? (
-                <div className="p-8 text-center bg-[#FAF7F2] rounded-2xl border border-[#EBDDBF] space-y-4">
-                  <CheckCircle2 className="w-12 h-12 text-[#24845D] mx-auto" />
-                  <h4 className="font-serif text-xl font-bold text-[#24211F]">Message Sent Successfully!</h4>
-                  <p className="text-xs text-[#77716B] max-w-sm mx-auto">
-                    We appreciate your interest in Sathuragiri Decoration. One of our event coordinators will call you shortly.
-                  </p>
-                  <Button variant="secondary" size="sm" onClick={() => setIsSubmitted(false)}>
-                    Send Another Message
-                  </Button>
+                    <Instagram className="w-4 h-4" />
+                  </a>
+                  <a
+                    href={settings?.facebook_url || 'https://facebook.com/sathuragiridecoration'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-colors"
+                    aria-label="Facebook"
+                  >
+                    <Facebook className="w-4 h-4" />
+                  </a>
+                  <a
+                    href={settings?.youtube_url || 'https://youtube.com/@sathuragiridecoration'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-10 h-10 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6] flex items-center justify-center text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-colors"
+                    aria-label="YouTube"
+                  >
+                    <Youtube className="w-4 h-4" />
+                  </a>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      label="Your Full Name"
-                      placeholder="e.g. Karthik Rajan"
-                      error={errors.name?.message}
-                      {...register('name')}
-                      required
-                    />
-                    <Input
-                      label="Phone / WhatsApp Number"
-                      placeholder="e.g. +91 98401 12233"
-                      error={errors.phone?.message}
-                      {...register('phone')}
-                      required
-                    />
-                  </div>
+              </div>
+            </div>
 
-                  <Input
-                    label="Email Address (Optional)"
-                    type="email"
-                    placeholder="e.g. karthik@example.com"
-                    error={errors.email?.message}
-                    {...register('email')}
-                  />
-
-                  <Textarea
-                    label="Tell Us About Your Event & Requirements"
-                    placeholder="Provide details such as approximate event date, venue, guest count, or specific decor styles you like..."
-                    rows={5}
-                    error={errors.message?.message}
-                    {...register('message')}
-                    required
-                  />
-
-                  <Button
-                    type="submit"
-                    variant="gold"
-                    size="lg"
-                    className="w-full"
-                    isLoading={isSubmitting}
-                    rightIcon={<Send className="w-4 h-4" />}
-                  >
-                    Submit Enquiry
-                  </Button>
-                </form>
-              )}
+            {/* Quick WhatsApp Direct Button */}
+            <div className="bg-gradient-to-br from-[#28231F] to-[#1E1B19] rounded-3xl p-8 text-white text-center space-y-4">
+              <h3 className="font-serif text-xl font-bold">Prefer a Direct Chat?</h3>
+              <p className="text-xs text-[#CECDCC] max-w-sm mx-auto leading-relaxed">
+                Click below to start an instant conversation with our team right now on WhatsApp.
+              </p>
+              <WhatsAppButton
+                size="md"
+                label="Chat on WhatsApp"
+                className="w-full justify-center"
+              />
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Google Maps Embed */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl overflow-hidden shadow-sm border border-[#E8E0D6] h-96 bg-gray-100">
-          <iframe
-            title="Sathuragiri Decoration Location Map"
-            src={
-              settings?.mapsEmbedUrl ||
-              'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125747.88722421375!2d78.04169722883301!3d9.92520074218841!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b00c582b1189633%3A0xdc955b7264f63933!2sMadurai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin'
-            }
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
         </div>
       </div>
     </div>

@@ -1,927 +1,639 @@
 -- ==============================================================================
--- SATHURAGIRI DECORATION & EVENT MANAGEMENT PLATFORM
--- SUPABASE POSTGRESQL COMPLETE DATABASE SCHEMA & INITIAL DATA SEED
+-- SATHURAGIRI DECORATION — SUPABASE POSTGRESQL PRODUCTION DATABASE SCHEMA
+-- Tagline: Every Celebration, Beautifully Crafted.
 -- ==============================================================================
--- Instructions:
+-- INSTRUCTIONS FOR FRESH SUPABASE SETUP:
 -- 1. Open your Supabase Project Dashboard (https://supabase.com/dashboard).
--- 2. Navigate to "SQL Editor" on the left navigation bar.
+-- 2. Navigate to "SQL Editor" on the left navigation menu.
 -- 3. Click "New query", paste the entire contents of this file, and click "Run".
+-- 4. To enable image uploads, ensure the "decoration-images" storage bucket exists
+--    (automatically created in section 7 of this script).
 -- ==============================================================================
 
--- Enable cryptographic UUID extension
+-- ------------------------------------------------------------------------------
+-- 1. EXTENSIONS & UTILITIES
+-- ------------------------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Function to automatically update "updatedAt" timestamp on row modification
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+-- Function to automatically update "updated_at" timestamps on row modification
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW."updatedAt" = CURRENT_TIMESTAMP;
+    NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ LANGUAGE 'plpgsql';
-
--- Drop existing tables (in reverse dependency order)
-DROP TABLE IF EXISTS "BusinessSettings" CASCADE;
-DROP TABLE IF EXISTS "AuditLog" CASCADE;
-DROP TABLE IF EXISTS "Notification" CASCADE;
-DROP TABLE IF EXISTS "Expense" CASCADE;
-DROP TABLE IF EXISTS "Payment" CASCADE;
-DROP TABLE IF EXISTS "QuotationItem" CASCADE;
-DROP TABLE IF EXISTS "Quotation" CASCADE;
-DROP TABLE IF EXISTS "BookingAssignment" CASCADE;
-DROP TABLE IF EXISTS "BookingService" CASCADE;
-DROP TABLE IF EXISTS "Booking" CASCADE;
-DROP TABLE IF EXISTS "EnquiryNote" CASCADE;
-DROP TABLE IF EXISTS "Enquiry" CASCADE;
-DROP TABLE IF EXISTS "Vendor" CASCADE;
-DROP TABLE IF EXISTS "StaffProfile" CASCADE;
-DROP TABLE IF EXISTS "PortfolioProject" CASCADE;
-DROP TABLE IF EXISTS "Package" CASCADE;
-DROP TABLE IF EXISTS "Service" CASCADE;
-DROP TABLE IF EXISTS "ServiceCategory" CASCADE;
-DROP TABLE IF EXISTS "Customer" CASCADE;
-DROP TABLE IF EXISTS "User" CASCADE;
+$$ LANGUAGE plpgsql;
 
 -- ------------------------------------------------------------------------------
--- 1. USERS & AUTHENTICATION (Admins, Managers, Staff)
+-- 2. TABLE: admins
+-- Administrator profiles linked to auth.users (Supabase Auth).
+-- Passwords are never stored here; Supabase Auth securely manages credentials.
 -- ------------------------------------------------------------------------------
-CREATE TABLE "User" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "email" TEXT NOT NULL UNIQUE,
-    "passwordHash" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "phone" TEXT,
-    "role" TEXT NOT NULL DEFAULT 'STAFF', -- OWNER, MANAGER, STAFF
-    "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "resetToken" TEXT,
-    "resetTokenExpires" TIMESTAMPTZ,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS public.admins (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'ADMIN' CHECK (role IN ('ADMIN', 'OWNER')),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX "idx_user_email" ON "User"("email");
+CREATE INDEX IF NOT EXISTS idx_admins_role ON public.admins(role);
+CREATE INDEX IF NOT EXISTS idx_admins_is_active ON public.admins(is_active);
 
-CREATE TRIGGER set_timestamp_user
-BEFORE UPDATE ON "User"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trigger_admins_updated_at ON public.admins;
+CREATE TRIGGER trigger_admins_updated_at
+    BEFORE UPDATE ON public.admins
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ------------------------------------------------------------------------------
--- 2. CUSTOMERS (CRM)
+-- 3. TABLE: event_categories
+-- Categories of decoration & event services (Wedding, Reception, Birthday, etc.)
+-- Only active categories appear on the public website.
 -- ------------------------------------------------------------------------------
-CREATE TABLE "Customer" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "name" TEXT NOT NULL,
-    "phone" TEXT NOT NULL UNIQUE,
-    "email" TEXT,
-    "address" TEXT,
-    "notes" TEXT,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS public.event_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    description TEXT,
+    cover_image_url TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX "idx_customer_phone" ON "Customer"("phone");
-CREATE INDEX "idx_customer_name" ON "Customer"("name");
+CREATE INDEX IF NOT EXISTS idx_event_categories_slug ON public.event_categories(slug);
+CREATE INDEX IF NOT EXISTS idx_event_categories_active ON public.event_categories(is_active);
+CREATE INDEX IF NOT EXISTS idx_event_categories_order ON public.event_categories(display_order);
 
-CREATE TRIGGER set_timestamp_customer
-BEFORE UPDATE ON "Customer"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trigger_event_categories_updated_at ON public.event_categories;
+CREATE TRIGGER trigger_event_categories_updated_at
+    BEFORE UPDATE ON public.event_categories
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ------------------------------------------------------------------------------
--- 3. SERVICE CATEGORIES
+-- 4. TABLE: portfolio_projects
+-- Completed decoration showcase projects.
+-- Foreign-key constraint protects against accidental deletion of referenced categories.
 -- ------------------------------------------------------------------------------
-CREATE TABLE "ServiceCategory" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "name" TEXT NOT NULL UNIQUE,
-    "slug" TEXT NOT NULL UNIQUE,
-    "description" TEXT,
-    "image" TEXT,
-    "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS public.portfolio_projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category_id UUID NOT NULL REFERENCES public.event_categories(id) ON DELETE RESTRICT,
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    description TEXT,
+    event_date DATE,
+    location TEXT,
+    cover_image_url TEXT,
+    status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('draft', 'published')),
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX "idx_servicecategory_slug" ON "ServiceCategory"("slug");
+CREATE INDEX IF NOT EXISTS idx_portfolio_projects_slug ON public.portfolio_projects(slug);
+CREATE INDEX IF NOT EXISTS idx_portfolio_projects_category ON public.portfolio_projects(category_id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_projects_status ON public.portfolio_projects(status);
+CREATE INDEX IF NOT EXISTS idx_portfolio_projects_order ON public.portfolio_projects(display_order);
+CREATE INDEX IF NOT EXISTS idx_portfolio_projects_date ON public.portfolio_projects(event_date DESC NULLS LAST);
 
-CREATE TRIGGER set_timestamp_servicecategory
-BEFORE UPDATE ON "ServiceCategory"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trigger_portfolio_projects_updated_at ON public.portfolio_projects;
+CREATE TRIGGER trigger_portfolio_projects_updated_at
+    BEFORE UPDATE ON public.portfolio_projects
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ------------------------------------------------------------------------------
--- 4. SERVICES CATALOG
+-- 5. TABLE: portfolio_images
+-- Multiple photographs belonging to each decoration project.
+-- Cascades on project deletion so orphan rows are never left behind.
 -- ------------------------------------------------------------------------------
-CREATE TABLE "Service" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "categoryId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "slug" TEXT NOT NULL UNIQUE,
-    "shortDesc" TEXT NOT NULL,
-    "detailedDesc" TEXT,
-    "coverImage" TEXT NOT NULL,
-    "images" TEXT, -- JSON Array of image URLs
-    "startingPrice" DOUBLE PRECISION,
-    "pricingMethod" TEXT NOT NULL DEFAULT 'Starting price',
-    "availableAddons" TEXT, -- JSON Array of addon strings
-    "isFeatured" BOOLEAN NOT NULL DEFAULT FALSE,
-    "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_service_category" FOREIGN KEY ("categoryId") REFERENCES "ServiceCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS public.portfolio_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES public.portfolio_projects(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    storage_path TEXT,
+    alt_text TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX "idx_service_categoryId" ON "Service"("categoryId");
-CREATE INDEX "idx_service_slug" ON "Service"("slug");
-CREATE INDEX "idx_service_isFeatured" ON "Service"("isFeatured");
-
-CREATE TRIGGER set_timestamp_service
-BEFORE UPDATE ON "Service"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE INDEX IF NOT EXISTS idx_portfolio_images_project ON public.portfolio_images(project_id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_images_order ON public.portfolio_images(display_order);
 
 -- ------------------------------------------------------------------------------
--- 5. EVENT PACKAGES
+-- 6. TABLE: site_settings
+-- Key-value store for business information (WhatsApp, phone, address, socials).
 -- ------------------------------------------------------------------------------
-CREATE TABLE "Package" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "name" TEXT NOT NULL,
-    "slug" TEXT NOT NULL UNIQUE,
-    "description" TEXT NOT NULL,
-    "includedServices" TEXT NOT NULL, -- JSON Array of included service points
-    "packagePrice" DOUBLE PRECISION,
-    "pricingType" TEXT NOT NULL DEFAULT 'Starting price',
-    "optionalExtras" TEXT, -- JSON Array of extras
-    "terms" TEXT,
-    "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "isFeatured" BOOLEAN NOT NULL DEFAULT FALSE,
-    "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS public.site_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    setting_key TEXT NOT NULL UNIQUE,
+    setting_value TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX "idx_package_slug" ON "Package"("slug");
+CREATE INDEX IF NOT EXISTS idx_site_settings_key ON public.site_settings(setting_key);
 
-CREATE TRIGGER set_timestamp_package
-BEFORE UPDATE ON "Package"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ------------------------------------------------------------------------------
--- 6. PORTFOLIO SHOWCASE
--- ------------------------------------------------------------------------------
-CREATE TABLE "PortfolioProject" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "title" TEXT NOT NULL,
-    "slug" TEXT NOT NULL UNIQUE,
-    "category" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
-    "clientName" TEXT,
-    "location" TEXT,
-    "eventDate" TIMESTAMPTZ,
-    "coverImage" TEXT NOT NULL,
-    "images" TEXT, -- JSON Array of gallery images
-    "isFeatured" BOOLEAN NOT NULL DEFAULT FALSE,
-    "isPublished" BOOLEAN NOT NULL DEFAULT TRUE,
-    "sortOrder" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX "idx_portfolio_slug" ON "PortfolioProject"("slug");
-CREATE INDEX "idx_portfolio_category" ON "PortfolioProject"("category");
-CREATE INDEX "idx_portfolio_isFeatured" ON "PortfolioProject"("isFeatured");
-
-CREATE TRIGGER set_timestamp_portfolio
-BEFORE UPDATE ON "PortfolioProject"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS trigger_site_settings_updated_at ON public.site_settings;
+CREATE TRIGGER trigger_site_settings_updated_at
+    BEFORE UPDATE ON public.site_settings
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ------------------------------------------------------------------------------
--- 7. CUSTOMER ENQUIRIES & LEADS
+-- 7. SUPABASE STORAGE BUCKET: decoration-images
 -- ------------------------------------------------------------------------------
-CREATE TABLE "Enquiry" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "reference" TEXT NOT NULL UNIQUE,
-    "customerId" TEXT NOT NULL,
-    "eventType" TEXT NOT NULL,
-    "eventTitle" TEXT,
-    "eventDate" TIMESTAMPTZ NOT NULL,
-    "endDate" TIMESTAMPTZ,
-    "venueName" TEXT,
-    "venueAddress" TEXT,
-    "venueCity" TEXT,
-    "guestCount" INTEGER,
-    "isOutdoor" BOOLEAN NOT NULL DEFAULT FALSE,
-    "selectedServiceIds" TEXT, -- JSON Array
-    "selectedPackageId" TEXT,
-    "customRequirements" TEXT,
-    "inspirationImages" TEXT, -- JSON Array
-    "budgetRange" TEXT,
-    "preferredContactMethod" TEXT NOT NULL DEFAULT 'Phone',
-    "consultationTime" TEXT,
-    "additionalNotes" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'NEW', -- NEW, CONTACTED, CONSULTATION_SCHEDULED, QUOTATION_SENT, NEGOTIATION, CONVERTED, LOST, ARCHIVED
-    "assignedToUserId" TEXT,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_enquiry_customer" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE INDEX "idx_enquiry_reference" ON "Enquiry"("reference");
-CREATE INDEX "idx_enquiry_status" ON "Enquiry"("status");
-CREATE INDEX "idx_enquiry_eventDate" ON "Enquiry"("eventDate");
-CREATE INDEX "idx_enquiry_customerId" ON "Enquiry"("customerId");
-
-CREATE TRIGGER set_timestamp_enquiry
-BEFORE UPDATE ON "Enquiry"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('decoration-images', 'decoration-images', TRUE)
+ON CONFLICT (id) DO UPDATE SET public = TRUE;
 
 -- ------------------------------------------------------------------------------
--- 8. ENQUIRY NOTES & FOLLOW-UPS
+-- 8. ROW LEVEL SECURITY (RLS) POLICIES
 -- ------------------------------------------------------------------------------
-CREATE TABLE "EnquiryNote" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "enquiryId" TEXT NOT NULL,
-    "userId" TEXT,
-    "note" TEXT NOT NULL,
-    "followUpDate" TIMESTAMPTZ,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_note_enquiry" FOREIGN KEY ("enquiryId") REFERENCES "Enquiry"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "fk_note_user" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
 
-CREATE INDEX "idx_enquirynote_enquiryId" ON "EnquiryNote"("enquiryId");
+-- Enable RLS on all tables
+ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.portfolio_projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.portfolio_images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
--- ------------------------------------------------------------------------------
--- 9. EVENT BOOKINGS
--- ------------------------------------------------------------------------------
-CREATE TABLE "Booking" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "reference" TEXT NOT NULL UNIQUE,
-    "customerId" TEXT NOT NULL,
-    "enquiryId" TEXT,
-    "eventName" TEXT NOT NULL,
-    "eventType" TEXT NOT NULL,
-    "startDate" TIMESTAMPTZ NOT NULL,
-    "endDate" TIMESTAMPTZ,
-    "venueName" TEXT,
-    "venueAddress" TEXT,
-    "venueCity" TEXT,
-    "guestCount" INTEGER,
-    "status" TEXT NOT NULL DEFAULT 'CONFIRMED', -- DRAFT, TENTATIVE, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
-    "totalAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "discountAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "taxAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "finalAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "internalNotes" TEXT,
-    "termsAndConditions" TEXT,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_booking_customer" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "fk_booking_enquiry" FOREIGN KEY ("enquiryId") REFERENCES "Enquiry"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
+-- Helper function to check if current authenticated user is an active admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.admins
+        WHERE id = auth.uid()
+          AND is_active = TRUE
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE INDEX "idx_booking_reference" ON "Booking"("reference");
-CREATE INDEX "idx_booking_status" ON "Booking"("status");
-CREATE INDEX "idx_booking_startDate" ON "Booking"("startDate");
-CREATE INDEX "idx_booking_customerId" ON "Booking"("customerId");
+-- --- Policy: admins ---
+DROP POLICY IF EXISTS "Admins can view own profile" ON public.admins;
+CREATE POLICY "Admins can view own profile"
+    ON public.admins FOR SELECT
+    TO authenticated
+    USING (id = auth.uid() OR public.is_admin());
 
-CREATE TRIGGER set_timestamp_booking
-BEFORE UPDATE ON "Booking"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP POLICY IF EXISTS "Admins can update own profile" ON public.admins;
+CREATE POLICY "Admins can update own profile"
+    ON public.admins FOR UPDATE
+    TO authenticated
+    USING (id = auth.uid())
+    WITH CHECK (id = auth.uid());
 
--- ------------------------------------------------------------------------------
--- 10. BOOKING SERVICES BREAKDOWN
--- ------------------------------------------------------------------------------
-CREATE TABLE "BookingService" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "bookingId" TEXT NOT NULL,
-    "serviceId" TEXT,
-    "serviceName" TEXT NOT NULL,
-    "quantity" INTEGER NOT NULL DEFAULT 1,
-    "unitPrice" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "notes" TEXT,
-    CONSTRAINT "fk_bookingservice_booking" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "fk_bookingservice_service" FOREIGN KEY ("serviceId") REFERENCES "Service"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
+-- --- Policy: event_categories ---
+-- Public can view active categories only
+DROP POLICY IF EXISTS "Public can view active categories" ON public.event_categories;
+CREATE POLICY "Public can view active categories"
+    ON public.event_categories FOR SELECT
+    USING (is_active = TRUE);
 
-CREATE INDEX "idx_bookingservice_bookingId" ON "BookingService"("bookingId");
+-- Admins can view all categories (including inactive)
+DROP POLICY IF EXISTS "Admins can view all categories" ON public.event_categories;
+CREATE POLICY "Admins can view all categories"
+    ON public.event_categories FOR SELECT
+    TO authenticated
+    USING (public.is_admin());
 
--- ------------------------------------------------------------------------------
--- 11. STAFF PROFILES
--- ------------------------------------------------------------------------------
-CREATE TABLE "StaffProfile" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "userId" TEXT UNIQUE,
-    "name" TEXT NOT NULL,
-    "phone" TEXT NOT NULL,
-    "email" TEXT,
-    "roleTitle" TEXT NOT NULL,
-    "skills" TEXT,
-    "availabilityStatus" TEXT NOT NULL DEFAULT 'AVAILABLE', -- AVAILABLE, ON_LEAVE, BUSY
-    "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_staff_user" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
+-- Admins can insert, update, delete categories
+DROP POLICY IF EXISTS "Admins can insert categories" ON public.event_categories;
+CREATE POLICY "Admins can insert categories"
+    ON public.event_categories FOR INSERT
+    TO authenticated
+    WITH CHECK (public.is_admin());
 
-CREATE INDEX "idx_staff_name" ON "StaffProfile"("name");
+DROP POLICY IF EXISTS "Admins can update categories" ON public.event_categories;
+CREATE POLICY "Admins can update categories"
+    ON public.event_categories FOR UPDATE
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
 
-CREATE TRIGGER set_timestamp_staff
-BEFORE UPDATE ON "StaffProfile"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP POLICY IF EXISTS "Admins can delete categories" ON public.event_categories;
+CREATE POLICY "Admins can delete categories"
+    ON public.event_categories FOR DELETE
+    TO authenticated
+    USING (public.is_admin());
 
--- ------------------------------------------------------------------------------
--- 12. VENDORS & SUPPLIERS
--- ------------------------------------------------------------------------------
-CREATE TABLE "Vendor" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "businessName" TEXT NOT NULL,
-    "contactPerson" TEXT NOT NULL,
-    "phone" TEXT NOT NULL,
-    "email" TEXT,
-    "category" TEXT NOT NULL,
-    "servicesSupplied" TEXT,
-    "agreedRates" TEXT,
-    "notes" TEXT,
-    "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+-- --- Policy: portfolio_projects ---
+-- Public can view published projects that belong to active categories
+DROP POLICY IF EXISTS "Public can view published projects" ON public.portfolio_projects;
+CREATE POLICY "Public can view published projects"
+    ON public.portfolio_projects FOR SELECT
+    USING (
+        status = 'published' AND
+        EXISTS (
+            SELECT 1 FROM public.event_categories
+            WHERE event_categories.id = portfolio_projects.category_id
+              AND event_categories.is_active = TRUE
+        )
+    );
 
-CREATE INDEX "idx_vendor_businessName" ON "Vendor"("businessName");
-CREATE INDEX "idx_vendor_category" ON "Vendor"("category");
+-- Admins can view all projects
+DROP POLICY IF EXISTS "Admins can view all projects" ON public.portfolio_projects;
+CREATE POLICY "Admins can view all projects"
+    ON public.portfolio_projects FOR SELECT
+    TO authenticated
+    USING (public.is_admin());
 
-CREATE TRIGGER set_timestamp_vendor
-BEFORE UPDATE ON "Vendor"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Admins can insert, update, delete projects
+DROP POLICY IF EXISTS "Admins can insert projects" ON public.portfolio_projects;
+CREATE POLICY "Admins can insert projects"
+    ON public.portfolio_projects FOR INSERT
+    TO authenticated
+    WITH CHECK (public.is_admin());
 
--- ------------------------------------------------------------------------------
--- 13. BOOKING ASSIGNMENTS
--- ------------------------------------------------------------------------------
-CREATE TABLE "BookingAssignment" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "bookingId" TEXT NOT NULL,
-    "staffId" TEXT,
-    "vendorId" TEXT,
-    "role" TEXT NOT NULL,
-    "notes" TEXT,
-    "assignedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_assignment_booking" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "fk_assignment_staff" FOREIGN KEY ("staffId") REFERENCES "StaffProfile"("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "fk_assignment_vendor" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
+DROP POLICY IF EXISTS "Admins can update projects" ON public.portfolio_projects;
+CREATE POLICY "Admins can update projects"
+    ON public.portfolio_projects FOR UPDATE
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
 
-CREATE INDEX "idx_assignment_bookingId" ON "BookingAssignment"("bookingId");
-CREATE INDEX "idx_assignment_staffId" ON "BookingAssignment"("staffId");
-CREATE INDEX "idx_assignment_vendorId" ON "BookingAssignment"("vendorId");
+DROP POLICY IF EXISTS "Admins can delete projects" ON public.portfolio_projects;
+CREATE POLICY "Admins can delete projects"
+    ON public.portfolio_projects FOR DELETE
+    TO authenticated
+    USING (public.is_admin());
 
--- ------------------------------------------------------------------------------
--- 14. QUOTATIONS
--- ------------------------------------------------------------------------------
-CREATE TABLE "Quotation" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "quotationNumber" TEXT NOT NULL UNIQUE,
-    "version" INTEGER NOT NULL DEFAULT 1,
-    "customerId" TEXT NOT NULL,
-    "bookingId" TEXT,
-    "enquiryId" TEXT,
-    "validUntil" TIMESTAMPTZ NOT NULL,
-    "subtotal" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "discount" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "taxRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "taxAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "grandTotal" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "terms" TEXT,
-    "exclusions" TEXT,
-    "paymentSchedule" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'DRAFT', -- DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED
-    "notes" TEXT,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_quotation_customer" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "fk_quotation_booking" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "fk_quotation_enquiry" FOREIGN KEY ("enquiryId") REFERENCES "Enquiry"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
+-- --- Policy: portfolio_images ---
+-- Public can view images of published projects
+DROP POLICY IF EXISTS "Public can view images of published projects" ON public.portfolio_images;
+CREATE POLICY "Public can view images of published projects"
+    ON public.portfolio_images FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.portfolio_projects
+            WHERE portfolio_projects.id = portfolio_images.project_id
+              AND portfolio_projects.status = 'published'
+        )
+    );
 
-CREATE INDEX "idx_quotation_number" ON "Quotation"("quotationNumber");
-CREATE INDEX "idx_quotation_status" ON "Quotation"("status");
-CREATE INDEX "idx_quotation_customerId" ON "Quotation"("customerId");
+-- Admins can view all images
+DROP POLICY IF EXISTS "Admins can view all images" ON public.portfolio_images;
+CREATE POLICY "Admins can view all images"
+    ON public.portfolio_images FOR SELECT
+    TO authenticated
+    USING (public.is_admin());
 
-CREATE TRIGGER set_timestamp_quotation
-BEFORE UPDATE ON "Quotation"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Admins can insert, update, delete images
+DROP POLICY IF EXISTS "Admins can insert images" ON public.portfolio_images;
+CREATE POLICY "Admins can insert images"
+    ON public.portfolio_images FOR INSERT
+    TO authenticated
+    WITH CHECK (public.is_admin());
 
--- ------------------------------------------------------------------------------
--- 15. QUOTATION ITEMS
--- ------------------------------------------------------------------------------
-CREATE TABLE "QuotationItem" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "quotationId" TEXT NOT NULL,
-    "serviceId" TEXT,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "quantity" DOUBLE PRECISION NOT NULL DEFAULT 1,
-    "unit" TEXT NOT NULL DEFAULT 'Set',
-    "unitPrice" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "discount" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "total" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    CONSTRAINT "fk_quotationitem_quotation" FOREIGN KEY ("quotationId") REFERENCES "Quotation"("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
+DROP POLICY IF EXISTS "Admins can update images" ON public.portfolio_images;
+CREATE POLICY "Admins can update images"
+    ON public.portfolio_images FOR UPDATE
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
 
-CREATE INDEX "idx_quotationitem_quotationId" ON "QuotationItem"("quotationId");
+DROP POLICY IF EXISTS "Admins can delete images" ON public.portfolio_images;
+CREATE POLICY "Admins can delete images"
+    ON public.portfolio_images FOR DELETE
+    TO authenticated
+    USING (public.is_admin());
 
--- ------------------------------------------------------------------------------
--- 16. PAYMENTS & RECEIPTS
--- ------------------------------------------------------------------------------
-CREATE TABLE "Payment" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "receiptNumber" TEXT NOT NULL UNIQUE,
-    "bookingId" TEXT NOT NULL,
-    "customerId" TEXT NOT NULL,
-    "amount" DOUBLE PRECISION NOT NULL,
-    "paymentMethod" TEXT NOT NULL DEFAULT 'UPI', -- CASH, BANK_TRANSFER, UPI, CARD, OTHER
-    "paymentType" TEXT NOT NULL DEFAULT 'ADVANCE', -- ADVANCE, PARTIAL, FINAL_SETTLEMENT, REFUND
-    "reference" TEXT,
-    "paymentDate" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "notes" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'PAID', -- PAID, PENDING, REFUNDED
-    "recordedByUserId" TEXT,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_payment_booking" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "fk_payment_customer" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "fk_payment_recordedby" FOREIGN KEY ("recordedByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
+-- --- Policy: site_settings ---
+-- Public can view non-secret settings
+DROP POLICY IF EXISTS "Public can view settings" ON public.site_settings;
+CREATE POLICY "Public can view settings"
+    ON public.site_settings FOR SELECT
+    USING (setting_key NOT LIKE 'secret_%');
 
-CREATE INDEX "idx_payment_receiptNumber" ON "Payment"("receiptNumber");
-CREATE INDEX "idx_payment_bookingId" ON "Payment"("bookingId");
-CREATE INDEX "idx_payment_customerId" ON "Payment"("customerId");
+-- Admins can view, insert, update settings
+DROP POLICY IF EXISTS "Admins can view all settings" ON public.site_settings;
+CREATE POLICY "Admins can view all settings"
+    ON public.site_settings FOR SELECT
+    TO authenticated
+    USING (public.is_admin());
 
-CREATE TRIGGER set_timestamp_payment
-BEFORE UPDATE ON "Payment"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP POLICY IF EXISTS "Admins can insert settings" ON public.site_settings;
+CREATE POLICY "Admins can insert settings"
+    ON public.site_settings FOR INSERT
+    TO authenticated
+    WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins can update settings" ON public.site_settings;
+CREATE POLICY "Admins can update settings"
+    ON public.site_settings FOR UPDATE
+    TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+
+-- --- Storage policies on storage.objects ---
+DROP POLICY IF EXISTS "Public read storage images" ON storage.objects;
+CREATE POLICY "Public read storage images"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'decoration-images');
+
+DROP POLICY IF EXISTS "Admins upload storage images" ON storage.objects;
+CREATE POLICY "Admins upload storage images"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (bucket_id = 'decoration-images' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Admins update storage images" ON storage.objects;
+CREATE POLICY "Admins update storage images"
+    ON storage.objects FOR UPDATE
+    TO authenticated
+    USING (bucket_id = 'decoration-images' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Admins delete storage images" ON storage.objects;
+CREATE POLICY "Admins delete storage images"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (bucket_id = 'decoration-images' AND public.is_admin());
 
 -- ------------------------------------------------------------------------------
--- 17. EXPENSES
+-- 9. AUTH TRIGGER: Auto-create admin profile on Supabase auth.users signup/insert
 -- ------------------------------------------------------------------------------
-CREATE TABLE "Expense" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "category" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
-    "amount" DOUBLE PRECISION NOT NULL,
-    "expenseDate" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "bookingId" TEXT,
-    "vendorId" TEXT,
-    "paymentMethod" TEXT NOT NULL DEFAULT 'CASH',
-    "receiptUrl" TEXT,
-    "recordedByUserId" TEXT,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_expense_booking" FOREIGN KEY ("bookingId") REFERENCES "Booking"("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "fk_expense_vendor" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "fk_expense_recordedby" FOREIGN KEY ("recordedByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
+CREATE OR REPLACE FUNCTION public.handle_new_admin_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.admins (id, display_name, role, is_active)
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1)),
+        'ADMIN',
+        TRUE
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET display_name = EXCLUDED.display_name,
+        updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE INDEX "idx_expense_bookingId" ON "Expense"("bookingId");
-CREATE INDEX "idx_expense_category" ON "Expense"("category");
-CREATE INDEX "idx_expense_expenseDate" ON "Expense"("expenseDate");
-
-CREATE TRIGGER set_timestamp_expense
-BEFORE UPDATE ON "Expense"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_admin_user();
 
 -- ------------------------------------------------------------------------------
--- 18. NOTIFICATIONS
+-- 10. SEED DATA: BUSINESS SETTINGS
 -- ------------------------------------------------------------------------------
-CREATE TABLE "Notification" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "title" TEXT NOT NULL,
-    "message" TEXT NOT NULL,
-    "type" TEXT NOT NULL DEFAULT 'ENQUIRY',
-    "isRead" BOOLEAN NOT NULL DEFAULT FALSE,
-    "link" TEXT,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX "idx_notification_isRead" ON "Notification"("isRead");
-CREATE INDEX "idx_notification_createdAt" ON "Notification"("createdAt");
-
--- ------------------------------------------------------------------------------
--- 19. AUDIT LOGS
--- ------------------------------------------------------------------------------
-CREATE TABLE "AuditLog" (
-    "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    "userId" TEXT,
-    "action" TEXT NOT NULL,
-    "entity" TEXT NOT NULL,
-    "entityId" TEXT,
-    "details" TEXT,
-    "ipAddress" TEXT,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "fk_audit_user" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-
-CREATE INDEX "idx_audit_entity" ON "AuditLog"("entity");
-CREATE INDEX "idx_audit_userId" ON "AuditLog"("userId");
-CREATE INDEX "idx_audit_createdAt" ON "AuditLog"("createdAt");
+INSERT INTO public.site_settings (setting_key, setting_value)
+VALUES
+    ('business_name', 'Sathuragiri Decoration'),
+    ('tagline', 'Every Celebration, Beautifully Crafted.'),
+    ('logo_url', '/logo-gold.svg'),
+    ('whatsapp_number', '+919842187654'),
+    ('phone', '+91 98421 87654'),
+    ('email', 'contact@sathuragiridecoration.com'),
+    ('address', '124, Temple View Road, Near Sathuragiri Hills, Madurai & Rajapalayam, Tamil Nadu - 626117, India'),
+    ('about_text', 'At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. Rooted in traditional South Indian heritage and elevated with contemporary luxury design, our master artisans create breathtaking wedding mandaps, opulent reception stages, joyous birthday backdrops, and auspicious family celebrations. Every floral garland, pillar, and illumination is meticulously crafted with devotion to perfection.'),
+    ('instagram_url', 'https://instagram.com/sathuragiridecoration'),
+    ('facebook_url', 'https://facebook.com/sathuragiridecoration'),
+    ('youtube_url', 'https://youtube.com/@sathuragiridecoration'),
+    ('footer_text', '© 2026 Sathuragiri Decoration. Every Celebration, Beautifully Crafted. All rights reserved.')
+ON CONFLICT (setting_key) DO UPDATE
+SET setting_value = EXCLUDED.setting_value,
+    updated_at = CURRENT_TIMESTAMP;
 
 -- ------------------------------------------------------------------------------
--- 20. BUSINESS SETTINGS (Branding, Contact, GST, Invoicing Terms)
+-- 11. SEED DATA: REQUIRED 9 EVENT CATEGORIES
 -- ------------------------------------------------------------------------------
-CREATE TABLE "BusinessSettings" (
-    "id" TEXT PRIMARY KEY DEFAULT 'default-settings',
-    "businessName" TEXT NOT NULL DEFAULT 'Sathuragiri Decoration',
-    "tagline" TEXT NOT NULL DEFAULT 'Every Celebration, Beautifully Crafted.',
-    "logoUrl" TEXT,
-    "phone" TEXT NOT NULL DEFAULT '+91 98421 87654',
-    "alternatePhone" TEXT DEFAULT '+91 94432 10987',
-    "whatsappNumber" TEXT NOT NULL DEFAULT '+919842187654',
-    "email" TEXT NOT NULL DEFAULT 'contact@sathuragiridecoration.com',
-    "address" TEXT NOT NULL DEFAULT 'Plot No. 45, Temple View Avenue, Near Ring Road',
-    "city" TEXT NOT NULL DEFAULT 'Madurai',
-    "state" TEXT NOT NULL DEFAULT 'Tamil Nadu',
-    "pincode" TEXT NOT NULL DEFAULT '625009',
-    "mapsEmbedUrl" TEXT DEFAULT 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125747.88722421375!2d78.04169722883301!3d9.92520074218841!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b00c582b1189633%3A0xdc955b7264f63933!2sMadurai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin',
-    "primaryGold" TEXT NOT NULL DEFAULT '#B8955A',
-    "gstNumber" TEXT DEFAULT '33AAHCS1234F1Z9',
-    "advancePercentageDefault" INTEGER NOT NULL DEFAULT 30,
-    "currencySymbol" TEXT NOT NULL DEFAULT '₹',
-    "termsDefault" TEXT DEFAULT '1. 30% advance is required to confirm booking date.\n2. 50% payable 2 days prior to the event setup.\n3. 20% final balance payable on event day after completion.\n4. Customized flower arrangements must be finalized 7 days in advance.',
-    "socialInstagram" TEXT DEFAULT 'https://instagram.com/sathuragiridecoration',
-    "socialFacebook" TEXT DEFAULT 'https://facebook.com/sathuragiridecoration',
-    "socialYoutube" TEXT DEFAULT 'https://youtube.com/@sathuragiridecoration',
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+INSERT INTO public.event_categories (id, name, slug, description, cover_image_url, display_order, is_active)
+VALUES
+    (
+        '11111111-1111-1111-1111-111111111101',
+        'Wedding Decoration',
+        'wedding-decoration',
+        'Opulent South Indian wedding mandapams, sacred stage canopies, traditional brass vilakku styling, and cascading fresh floral arches.',
+        'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
+        1,
+        TRUE
+    ),
+    (
+        '11111111-1111-1111-1111-111111111102',
+        'Reception Decoration',
+        'reception-decoration',
+        'Regal reception stage backdrops, contemporary crystal chandeliers, dynamic ambient lighting, and bespoke royal styling.',
+        'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
+        2,
+        TRUE
+    ),
+    (
+        '11111111-1111-1111-1111-111111111103',
+        'Engagement',
+        'engagement',
+        'Romantic pastel ring-ceremony stages, floral halos, customized couple monograms, and intimate banquet decor.',
+        'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80',
+        3,
+        TRUE
+    ),
+    (
+        '11111111-1111-1111-1111-111111111104',
+        'Birthday Celebration',
+        'birthday-celebration',
+        'Thematic birthday decors, luxury organic balloon garlands, 3D neon backdrops, and joyous milestone arrangements for all ages.',
+        'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80',
+        4,
+        TRUE
+    ),
+    (
+        '11111111-1111-1111-1111-111111111105',
+        'Baby Shower',
+        'baby-shower',
+        'Auspicious Seemantham & Valakaappu traditional swing setups, fresh lotus floral walls, cradle decorations, and pastel themes.',
+        'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80',
+        5,
+        TRUE
+    ),
+    (
+        '11111111-1111-1111-1111-111111111106',
+        'Traditional Functions',
+        'traditional-functions',
+        'Traditional House Warming (Grihapravesam), Ear Piercing (Kaadhu Kuthu), Puberty Ceremonies, and temple festival celebrations.',
+        'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80',
+        6,
+        TRUE
+    ),
+    (
+        '11111111-1111-1111-1111-111111111107',
+        'Photoshoots',
+        'photoshoots',
+        'Aesthetic pre-wedding, maternity, and couple photoshoot zones with fairy lights, rustic wooden props, and floral frames.',
+        'https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=1200&q=80',
+        7,
+        TRUE
+    ),
+    (
+        '11111111-1111-1111-1111-111111111108',
+        'Catering',
+        'catering',
+        'Complete traditional banquet dining setups, pristine banana leaf arrangements, royal buffet counters, and hospitality styling.',
+        'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1200&q=80',
+        8,
+        TRUE
+    ),
+    (
+        '11111111-1111-1111-1111-111111111109',
+        'Event Stalls',
+        'event-stalls',
+        'Welcome arches, live chaat stalls, popcorn & candy counters, decorative entrance canopies, and interactive selfie photo booths.',
+        'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=1200&q=80',
+        9,
+        TRUE
+    )
+ON CONFLICT (slug) DO UPDATE
+SET name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    cover_image_url = EXCLUDED.cover_image_url,
+    display_order = EXCLUDED.display_order,
+    is_active = EXCLUDED.is_active,
+    updated_at = CURRENT_TIMESTAMP;
 
-CREATE TRIGGER set_timestamp_settings
-BEFORE UPDATE ON "BusinessSettings"
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- ------------------------------------------------------------------------------
+-- 12. SEED DATA: COMPLETED PORTFOLIO PROJECTS & MULTIPLE PHOTOGRAPHS
+-- ------------------------------------------------------------------------------
+INSERT INTO public.portfolio_projects (
+    id, category_id, title, slug, description, event_date, location, cover_image_url, status, display_order
+) VALUES
+    (
+        '22222222-2222-2222-2222-222222222201',
+        '11111111-1111-1111-1111-111111111101',
+        'Royal Chettinad Kalyana Mandapam',
+        'royal-chettinad-kalyana-mandapam',
+        'A magnificent traditional South Indian temple-style mandap adorned with fresh jasmine garlands, brass Urulis with floating marigolds, and handcrafted gold-carved temple pillars.',
+        '2026-02-14',
+        'Madurai, Tamil Nadu',
+        'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
+        'published',
+        1
+    ),
+    (
+        '22222222-2222-2222-2222-222222222202',
+        '11111111-1111-1111-1111-111111111102',
+        'Golden Starlight Royal Reception Stage',
+        'golden-starlight-royal-reception-stage',
+        'An opulent modern reception stage featuring champagne gold geometric arches, cascading imported chandeliers, warm amber spotlights, and royal velvet couch seating.',
+        '2026-01-28',
+        'Rajapalayam, Tamil Nadu',
+        'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
+        'published',
+        2
+    ),
+    (
+        '22222222-2222-2222-2222-222222222203',
+        '11111111-1111-1111-1111-111111111103',
+        'Enchanted Pastel Bloom Engagement',
+        'enchanted-pastel-bloom-engagement',
+        'A romantic ring-ceremony design crafted with blush pink carnations, white hydrangeas, acrylic monograms, and an ethereal fairy light tunnel.',
+        '2026-02-05',
+        'Srivilliputhur, Tamil Nadu',
+        'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80',
+        'published',
+        3
+    ),
+    (
+        '22222222-2222-2222-2222-222222222204',
+        '11111111-1111-1111-1111-111111111105',
+        'Auspicious Lotus Seemantham Traditional Decor',
+        'auspicious-lotus-seemantham-traditional-decor',
+        'A traditional Tamil baby shower ceremony decor with a wooden swing covered in pink lotus buds, jasmine ropes, banana trunk entrance decor, and brass kuthuvilakku.',
+        '2026-01-15',
+        'Virudhunagar, Tamil Nadu',
+        'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80',
+        'published',
+        4
+    ),
+    (
+        '22222222-2222-2222-2222-222222222205',
+        '11111111-1111-1111-1111-111111111104',
+        'Fairytale Safari 1st Birthday Extravaganza',
+        'fairytale-safari-first-birthday',
+        'A vibrant luxury birthday setup with organic pastel green and gold balloon clusters, 3D animal sculptures, LED marquee numbers, and customized cake table display.',
+        '2026-03-01',
+        'Madurai, Tamil Nadu',
+        'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80',
+        'published',
+        5
+    ),
+    (
+        '22222222-2222-2222-2222-222222222206',
+        '11111111-1111-1111-1111-111111111106',
+        'Heritage Grihapravesam Traditional Home Welcome',
+        'heritage-grihapravesam-traditional-home-welcome',
+        'Traditional South Indian housewarming entrance arch featuring fresh mango leaves, yellow marigold torans, Rangoli floral floor art, and brass diyas.',
+        '2026-02-20',
+        'Sathuragiri Foothills, Tamil Nadu',
+        'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80',
+        'published',
+        6
+    ),
+    (
+        '22222222-2222-2222-2222-222222222207',
+        '11111111-1111-1111-1111-111111111107',
+        'Sunset Rustic Garden Couple Photoshoot Zone',
+        'sunset-rustic-garden-couple-photoshoot',
+        'A romantic outdoor photoshoot setting featuring a floral circular moon gate, vintage wooden benches, lanterns, and golden hour lighting setup.',
+        '2026-02-10',
+        'Courtallam, Tamil Nadu',
+        'https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=1200&q=80',
+        'published',
+        7
+    ),
+    (
+        '22222222-2222-2222-2222-222222222208',
+        '11111111-1111-1111-1111-111111111108',
+        'Royal Virundhu Banquet Dining Arrangement',
+        'royal-virundhu-banquet-dining-arrangement',
+        'Pristine South Indian wedding feast setup with silk-bordered banana leaf tables, traditional copper water carafes, flower centerpieces, and neat banquet canopy.',
+        '2026-01-22',
+        'Madurai, Tamil Nadu',
+        'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1200&q=80',
+        'published',
+        8
+    )
+ON CONFLICT (slug) DO UPDATE
+SET title = EXCLUDED.title,
+    description = EXCLUDED.description,
+    event_date = EXCLUDED.event_date,
+    location = EXCLUDED.location,
+    cover_image_url = EXCLUDED.cover_image_url,
+    status = EXCLUDED.status,
+    display_order = EXCLUDED.display_order,
+    updated_at = CURRENT_TIMESTAMP;
+
+-- ------------------------------------------------------------------------------
+-- 13. SEED DATA: MULTIPLE PROJECT PHOTOGRAPHS
+-- ------------------------------------------------------------------------------
+INSERT INTO public.portfolio_images (project_id, image_url, alt_text, display_order)
+VALUES
+    -- Royal Chettinad Mandapam Images
+    ('22222222-2222-2222-2222-222222222201', 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80', 'Full Mandapam Panoramic View', 1),
+    ('22222222-2222-2222-2222-222222222201', 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80', 'Traditional Brass Kuthuvilakku & Floral Rangoli', 2),
+    ('22222222-2222-2222-2222-222222222201', 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80', 'Entrance Floral Pathway Arch', 3),
+
+    -- Golden Starlight Reception Images
+    ('22222222-2222-2222-2222-222222222202', 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80', 'Golden Starlight Stage Overview', 1),
+    ('22222222-2222-2222-2222-222222222202', 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=1200&q=80', 'Crystal Chandelier and Amber Spotlights Close-up', 2),
+    ('22222222-2222-2222-2222-222222222202', 'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80', 'Couple Royal Velvet Sofa & Backdrop Detail', 3),
+
+    -- Enchanted Engagement Images
+    ('22222222-2222-2222-2222-222222222203', 'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80', 'Blush Pastel Floral Halo', 1),
+    ('22222222-2222-2222-2222-222222222203', 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80', 'Couple Name Monogram with White Hydrangeas', 2),
+
+    -- Seemantham Images
+    ('22222222-2222-2222-2222-222222222204', 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=80', 'Traditional Wooden Swing with Lotus Decor', 1),
+    ('22222222-2222-2222-2222-222222222204', 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80', 'Jasmine Ropes and Traditional Brass Uruli', 2),
+
+    -- Birthday Images
+    ('22222222-2222-2222-2222-222222222205', 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80', 'Safari Theme Balloon Arch and Props', 1),
+    ('22222222-2222-2222-2222-222222222205', 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=1200&q=80', 'Cylinder Cake Stands & Illuminated Numbers', 2),
+
+    -- Photoshoot Images
+    ('22222222-2222-2222-2222-222222222207', 'https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=1200&q=80', 'Circular Floral Arch in Sunset Glow', 1),
+    ('22222222-2222-2222-2222-222222222207', 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80', 'Rustic Fairy Light Lanterns and Wooden Bench', 2)
+ON CONFLICT DO NOTHING;
 
 -- ==============================================================================
--- INITIAL SEED DATA (Admin, Staff, Services, Packages, Portfolio & Settings)
--- ==============================================================================
-
--- 1. Business Settings
-INSERT INTO "BusinessSettings" (
-    "id", "businessName", "tagline", "phone", "alternatePhone", "whatsappNumber",
-    "email", "address", "city", "state", "pincode", "mapsEmbedUrl", "primaryGold",
-    "gstNumber", "advancePercentageDefault", "currencySymbol", "termsDefault",
-    "socialInstagram", "socialFacebook", "socialYoutube"
-) VALUES (
-    'default-settings',
-    'Sathuragiri Decoration',
-    'Every Celebration, Beautifully Crafted.',
-    '+91 98421 87654',
-    '+91 94432 10987',
-    '+919842187654',
-    'contact@sathuragiridecoration.com',
-    'Plot No. 45, Temple View Avenue, Near Ring Road',
-    'Madurai',
-    'Tamil Nadu',
-    '625009',
-    'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d125747.88722421375!2d78.04169722883301!3d9.92520074218841!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b00c582b1189633%3A0xdc955b7264f63933!2sMadurai%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin',
-    '#B8955A',
-    '33AAHCS1234F1Z9',
-    30,
-    '₹',
-    '1. 30% advance is required to confirm booking date.\n2. 50% payable 2 days prior to the event setup.\n3. 20% final balance payable on event day after completion.\n4. Customized flower arrangements must be finalized 7 days in advance.',
-    'https://instagram.com/sathuragiridecoration',
-    'https://facebook.com/sathuragiridecoration',
-    'https://youtube.com/@sathuragiridecoration'
-) ON CONFLICT ("id") DO UPDATE SET "businessName" = EXCLUDED."businessName";
-
--- 2. Initial Users (Admin / Owner, Manager, Staff)
--- Passwords:
--- Admin: Admin@12345
--- Manager: Manager@12345
--- Staff: Staff@12345
-INSERT INTO "User" ("id", "email", "passwordHash", "name", "phone", "role", "isActive") VALUES
-('usr-admin-001', 'admin@sathuragiridecoration.com', '$2a$10$naPYhx/JY1SNrmeR8JYGL.XnzIlopMtONAvxDbTnzJnba.vhloA5K', 'Muthukumar (Proprietor)', '+91 98421 87654', 'OWNER', TRUE),
-('usr-mgr-002', 'manager@sathuragiridecoration.com', '$2a$10$yP60wmCEqHMDlDI7vszm/eown2g/zWHD.XmBZ4ZQGHLImJi041Xem', 'Saravanan R (Operations Manager)', '+91 94432 10987', 'MANAGER', TRUE),
-('usr-stf-003', 'staff@sathuragiridecoration.com', '$2a$10$cm7rn254yVl1nqTZ9/unQOXnOfZQLBw26OoPgETQACtZctK/SRfYi', 'Ramesh Kumar (Lead Decorator)', '+91 97890 54321', 'STAFF', TRUE)
-ON CONFLICT ("email") DO NOTHING;
-
--- 3. Staff Profiles
-INSERT INTO "StaffProfile" ("id", "userId", "name", "phone", "email", "roleTitle", "skills", "availabilityStatus", "isActive") VALUES
-('stf-001', 'usr-stf-003', 'Ramesh Kumar', '+91 97890 54321', 'staff@sathuragiridecoration.com', 'Senior Mandapam & Stage Decorator', 'Floral Arches, Traditional Temple Carvings, Fabric Draping, Canopy Setups', 'AVAILABLE', TRUE),
-('stf-002', NULL, 'Ganesh Pandian', '+91 98765 11223', 'ganesh@sathuragiridecoration.com', 'Senior Lighting & Sound Engineer', 'Moving Heads, Par Cans, Truss Architecture, Ambient Mood Lighting', 'AVAILABLE', TRUE),
-('stf-003', NULL, 'Meenakshi Sundaram', '+91 98765 44556', 'sundaram@sathuragiridecoration.com', 'Master Floral Stylist', 'Jasmine Garlands, Exotic Orchids, Marigold Wall Art, Lotus Mandapam', 'AVAILABLE', TRUE)
-ON CONFLICT ("id") DO NOTHING;
-
--- 4. Vendors
-INSERT INTO "Vendor" ("id", "businessName", "contactPerson", "phone", "email", "category", "servicesSupplied", "agreedRates", "notes", "isActive") VALUES
-('vnd-001', 'Madurai Flower Mart & Fragrance', 'K. Senthil Nathan', '+91 94431 88776', 'senthilflowers@example.com', 'Flowers', 'Fresh Madurai Malli (Jasmine), Bangalore Roses, Orchids, Carnations, Lilies', 'Bulk market wholesale rate + 5% handling', 'Reliable supplier, morning delivery guaranteed by 5:00 AM', TRUE),
-('vnd-002', 'Apex Audio-Visual & Trussing Solutions', 'Murugesh V', '+91 98402 33445', 'apexlights@example.com', 'Sound & Light', 'High-power LED Pars, Sharpies, Line Array Speakers, Smoke Machines', '₹25,000 per standard wedding stage setup', 'Includes 2 dedicated on-site technicians', TRUE),
-('vnd-003', 'Sri Annapoorani Grand Feasts & Catering', 'Chef Ramanathan', '+91 98422 66778', 'annapooranifeasts@example.com', 'Catering', 'Authentic 24-dish Banana Leaf Feast, Live Chaat, Tandoor & Dessert Counters', '₹350 - ₹650 per leaf/plate depending on menu', 'Traditional cooks specialized in South Indian marriage menus', TRUE)
-ON CONFLICT ("id") DO NOTHING;
-
--- 5. Service Categories
-INSERT INTO "ServiceCategory" ("id", "name", "slug", "description", "image", "sortOrder", "isActive") VALUES
-('cat-001', 'Marriage & Wedding Decoration', 'wedding-decoration', 'Grand South Indian Muhurtham Mandapams, temple theme setups, floral pillars, and sacred backdrop decor.', 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80', 1, TRUE),
-('cat-002', 'Reception Stage Decoration', 'reception-stages', 'Luxury backdrop concepts, floral walls, geometric arches, crystal chandeliers, and dynamic stage setups.', 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80', 2, TRUE),
-('cat-003', 'Engagement, Haldi & Sangeet', 'engagement-haldi-sangeet', 'Vibrant marigold photobooths, swing decorations, ring ceremony gazebos, and thematic pre-wedding decor.', 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80', 3, TRUE),
-('cat-004', 'Photography & Cinematic Films', 'photography-videography', 'Candid wedding photography, cinematic 4K highlight films, drone captures, and pre-wedding shoots.', 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=1200&q=80', 4, TRUE),
-('cat-005', 'Catering & Live Food Stalls', 'catering-food-stalls', 'Traditional South Indian banana leaf feasts, Chettinad specialties, live dosa stations, and chaat counters.', 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1200&q=80', 5, TRUE),
-('cat-006', 'Entrance & Welcome Archways', 'entrance-walkway-decoration', 'Grand royal gateway entrances, red carpet walkways, floral tunnels, and welcome board styling.', 'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80', 6, TRUE),
-('cat-007', 'Corporate Events & Exhibition Stalls', 'corporate-exhibition-stalls', 'Professional expo booth fabrications, corporate summit stages, product launch backdrops, and trussing.', 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80', 7, TRUE),
-('cat-008', 'Birthday & Milestone Celebrations', 'birthday-anniversary-parties', 'Thematic balloon styling, 3D character cutouts, cake table backdrops, and lighting setups.', 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80', 8, TRUE)
-ON CONFLICT ("slug") DO NOTHING;
-
--- 6. Services
-INSERT INTO "Service" (
-    "id", "categoryId", "name", "slug", "shortDesc", "detailedDesc", "coverImage",
-    "images", "startingPrice", "pricingMethod", "availableAddons", "isFeatured", "isActive", "sortOrder"
-) VALUES
-(
-    'srv-001', 'cat-001',
-    'Royal South Indian Muhurtham Mandapam', 'royal-muhurtham-mandapam',
-    'Carved temple pillars, fresh Madurai Malli & rose hangings, lotus pond center, and traditional brass lamps.',
-    'Our signature Muhurtham Mandapam is designed to bring the divine sanctity of South Indian temples into your wedding hall. Crafted with sculpted golden pillars, fresh fragrant Madurai jasmine, pink Bangalore roses, and golden brass kuthu vilakku lamps, it creates a breathtaking sacred sanctuary for your wedding rituals.',
-    'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80","https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80","https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80"]',
-    65000, 'Starting price',
-    '["Brass Urli with Floating Flowers & Diyas","Live Shehnai & Nadaswaram Stage Setup","Pooja Thali & Coconut Carving Styling"]',
-    TRUE, TRUE, 1
-),
-(
-    'srv-002', 'cat-002',
-    'Grand Floral Dream Reception Stage', 'grand-floral-reception-stage',
-    'Lush 40ft floral wall backdrop with crystal chandeliers, golden frames, warm ambient backlighting, and royal sofa.',
-    'An opulent reception stage with 3D layers of fresh orchids, white hydrangeas, champagne roses, and warm fairy lights. Includes custom velvet/leatherette bride & groom royal throne sofa, carpeted stage riser, and programmable mood lighting.',
-    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80","https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1200&q=80"]',
-    55000, 'Starting price',
-    '["Dry Ice Smoke Effect for Couple Entry","Cold Fire / Pyro Sparklers Stage Blast","Personalized Acrylic Couple Name Monogram with Neon Glow"]',
-    TRUE, TRUE, 2
-),
-(
-    'srv-003', 'cat-003',
-    'Vibrant Haldi & Mehndi Festive Setup', 'haldi-mehndi-festive-setup',
-    'Bright marigold canopies, traditional painted jhoola (swing), colorful drapes, brass urli setup, and photo booths.',
-    'Filled with joyful yellow and orange tones, our Haldi & Mehndi setup features genuine marigold flower strings, decorated wooden swings with bolster cushions, traditional umbrellas, brass water bowls, and vibrant rangoli accents.',
-    'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80"]',
-    35000, 'Starting price',
-    '["Fresh Flower Jewellery for Bride","Floral Rain (Pushpa Vrushti) Setup","Organic Haldi & Phoolon Ki Holi Kit"]',
-    TRUE, TRUE, 3
-),
-(
-    'srv-004', 'cat-004',
-    'Cinematic Wedding Film & Candid Photography', 'cinematic-wedding-film-photography',
-    '2 Candid Photographers + 2 Cinematographers, 4K Sony FX3 cameras, aerial drone footage, teaser trailer & luxury album.',
-    'Capture every priceless emotion, stolen glance, and ritual in cinema-grade quality. Our team of senior wedding photographers and cinematographers bring artistic storytelling with color-graded highlights and hardbound handcrafted photobooks.',
-    'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=1200&q=80","https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=1200&q=80"]',
-    75000, 'Starting price',
-    '["Pre-Wedding Outdoor Photoshoot at Scenic Location","Same-Day Edit Video Reel for Reception","Parent Duplicate Premium Albums (Set of 2)"]',
-    TRUE, TRUE, 4
-),
-(
-    'srv-005', 'cat-005',
-    'Grand South Indian 24-Item Leaf Feast', 'grand-south-indian-leaf-feast',
-    'Traditional banana leaf wedding feast with authentic delicacies, live ghee roast counters, payasam varieties, and warm hospitality.',
-    'A culinary celebration fit for royalty. Prepared by master wedding chefs using cold-pressed oils, pure cow ghee, and hand-ground spices. Complete with uniformed serving staff, copper service vessels, and welcome drinks.',
-    'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1200&q=80"]',
-    400, 'Per person',
-    '["Live Tandoor & Chaat Stall","South Indian Filter Coffee & Tea Barista Stall","Ice Cream Sundae & Fresh Fruit Counter"]',
-    TRUE, TRUE, 5
-),
-(
-    'srv-006', 'cat-006',
-    'Imperial Floral Tunnel & Gateway Entrance', 'imperial-floral-tunnel-entrance',
-    'A majestic 60ft walk-through floral tunnel with hanging fairy lights, brass urlis, red carpet, and customized welcome signage.',
-    'Make the first impression of your event an unforgettable royal entrance. Lush arches of fresh exotic flowers, gentle ambient lighting, aromatic floral hangings, and elegant couple welcome easel stand.',
-    'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80"]',
-    38000, 'Starting price',
-    '["Rose Petal Shower Machine at Entrance","Traditional Welcome Aarti Girls & Attire","Custom Neon Name Board with Floral Frame"]',
-    FALSE, TRUE, 6
-),
-(
-    'srv-007', 'cat-007',
-    'Corporate Expo Stall & Summit Stage Setup', 'corporate-expo-stage-setup',
-    'Modular exhibition stall fabrication, high-resolution LED backdrop walls, podium branding, and premium sound systems.',
-    'Tailored for corporate product launches, annual conventions, and exhibitions. We provide German hangar tenting, octanorm booth setups, acrylic laser cut lettering, stage audio-visuals, and seamless on-site technical coordination.',
-    'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80"]',
-    45000, 'Starting price',
-    '["P3 Outdoor / Indoor High-Def LED Wall","Corporate Delegate Gift Hamper Stalls","Photography & Live Webcasting Crew"]',
-    FALSE, TRUE, 7
-),
-(
-    'srv-008', 'cat-008',
-    'Luxury Theme Birthday & Balloon Extravaganza', 'luxury-theme-birthday-decor',
-    'Pastel organic balloon arches, customized 3D character cutouts, LED neon signage, dessert table styling, and mood lighting.',
-    'Transform your baby’s first birthday or 50th golden jubilee into a magical wonderland. Complete with tailored themes (Jungle Safari, Royal Princess, Space Odyssey, Boho Chic), ring arches, marquee light numbers, and themed props.',
-    'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80"]',
-    22000, 'Starting price',
-    '["Magic Show & Mascot Entertainer","Cotton Candy & Popcorn Live Stall","Custom Balloon Burst Pinata"]',
-    FALSE, TRUE, 8
-)
-ON CONFLICT ("slug") DO NOTHING;
-
--- 7. Event Packages
-INSERT INTO "Package" (
-    "id", "name", "slug", "description", "includedServices", "packagePrice",
-    "pricingType", "optionalExtras", "terms", "isActive", "isFeatured", "sortOrder"
-) VALUES
-(
-    'pkg-001', 'Silver Elegance Package', 'silver-elegance-package',
-    'Ideal for intimate family engagements, betrothals, and traditional housewarming or birthday ceremonies.',
-    '["20ft Floral Stage Backdrop with Fabric Draping","Couple Stage Chairs with Floral Accents","Entrance Archway with Marigold & Rose Styling","Standard Warm Halogen & LED Par Lighting Setup","Welcome Easel Board with Floral Bunch"]',
-    65000, 'Starting price',
-    '["Candid Photography Add-on","Live Mocktail Counter","Rose Petal Entry Pathway"]',
-    'Setup complete 4 hours before event. 30% advance to book.',
-    TRUE, FALSE, 1
-),
-(
-    'pkg-002', 'Royal Gold Wedding Package', 'royal-gold-wedding-package',
-    'Our most sought-after complete wedding package encompassing traditional Muhurtham Mandapam and Grand Reception Stage.',
-    '["Authentic Carved Temple Muhurtham Mandapam with Fresh Jasmine & Rose Garland Hangings","Grand 35ft Reception Stage Floral Wall with Crystal Chandeliers & Warm Halo Glow","Royal Couple Throne Sofa + VIP Seating Linen","40ft Grand Floral Tunnel Entrance with Carpet","Intelligent Stage Lighting, Sharpies & Fog Machines","Brass Lamp (Kuthu Vilakku) & Urli Styling for Rituals"]',
-    185000, 'Starting price',
-    '["4K Drone & Cinematic Video Upgrade","Cold Fire Pyro Sparklers Entry","Live Filter Coffee & Chaat Corner"]',
-    'Requires 30% advance on signing, 50% 2 days before event, balance on completion.',
-    TRUE, TRUE, 2
-),
-(
-    'pkg-003', 'Imperial Diamond Grand Wedding Experience', 'imperial-diamond-grand-wedding',
-    'The pinnacle of luxury. Complete end-to-end wedding, reception, haldi, photography, and VIP hospitality.',
-    '["Palatial Temple Mandapam with 100% Exotic Fresh Flora (Orchids, Carnations, Madurai Jasmine)","Magnificent 50ft Multilevel 3D Reception Stage with Hanging Floral Ceiling & Crystal Chandeliers","Full Venue Walkway, Dining Hall & VIP Lounge Thematic Décor","60ft Royal Archway Entrance with Water Fountains & Flame Torches","Complete 2-Day Photography & Cinematic 4K Drone Coverage (Teaser + 40-page Handcrafted Album)","Dry Ice Low Fog + 6-Unit Pyro Sparkler Blast for Grand Couple Walk-in","Full-Time Dedicated Event Coordinator & Technical Crew"]',
-    375000, 'Starting price',
-    '["Celebrity Anchor & Live Nadaswaram Troupe","Royal Vintage Car Bridal Entry","Customized LED Wall Backdrop with Visuals"]',
-    'Dedicated event manager assigned. Advance booking minimum 3 weeks in advance recommended.',
-    TRUE, TRUE, 3
-),
-(
-    'pkg-004', 'Custom Bespoke Event Solution', 'custom-bespoke-event-solution',
-    'Completely tailored to your vision, venue dimensions, and event type. You pick the exact elements.',
-    '["Personalized 1-on-1 Consultation & 3D Stage Layout Mockup","Custom Mix of Floral, Lighting, Photography & Catering","Tailored Budget Options for Destination Weddings & Corporate Galas"]',
-    NULL, 'Request a Quote',
-    '["Custom Theme Architecture","Exhibition Booth Fabrication","Gourmet Catering Menu"]',
-    'Tailored payment schedule based on agreed quotation.',
-    TRUE, FALSE, 4
-)
-ON CONFLICT ("slug") DO NOTHING;
-
--- 8. Portfolio Projects
-INSERT INTO "PortfolioProject" (
-    "id", "title", "slug", "category", "description", "clientName", "location",
-    "eventDate", "coverImage", "images", "isFeatured", "isPublished", "sortOrder"
-) VALUES
-(
-    'port-001', 'The Royal Chettinad Palace Wedding - Karthik & Divya', 'chettinad-palace-wedding-karthik-divya',
-    'Traditional Wedding',
-    'A breathtaking traditional Tamil Brahmin wedding executed at the historic Chettinad heritage palace. Featuring an authentic hand-carved lotus mandapam draped with 120 kgs of pure Madurai jasmine and fragrant marigolds.',
-    'Dr. Karthik & Dr. Divya', 'Heritage Palace Hall, Madurai',
-    '2025-11-20T00:00:00Z',
-    'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80","https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80","https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80"]',
-    TRUE, TRUE, 1
-),
-(
-    'port-002', 'Starlit Crystal Grand Reception - Vignesh & Pooja', 'starlit-crystal-reception-vignesh-pooja',
-    'Reception Stage',
-    'A modern fairytale reception stage constructed with geometric golden pillars, 5000+ imported white orchids, tiered chandeliers, and dynamic warm amber backlighting for 1,500 guests.',
-    'Vigneshwaran & Pooja', 'Grand Convention Center, Coimbatore',
-    '2025-12-14T00:00:00Z',
-    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80","https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=1200&q=80"]',
-    TRUE, TRUE, 2
-),
-(
-    'port-003', 'Golden Sunset Marigold Haldi & Sangeet - Arvind & Soundarya', 'sunset-marigold-haldi-arvind-soundarya',
-    'Engagement & Haldi',
-    'An energizing outdoor poolside Haldi celebration. Draped in sunshine yellow silk drapes, bespoke swings, brass water vessels with yellow petals, and personalized photo backdrops.',
-    'Arvind & Soundarya', 'Riverview Resort, Tirunelveli',
-    '2026-01-10T00:00:00Z',
-    'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1200&q=80","https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=1200&q=80"]',
-    TRUE, TRUE, 3
-),
-(
-    'port-004', 'Zoho Regional Tech Summit & Expo 2026', 'zoho-regional-tech-summit-2026',
-    'Corporate Events',
-    'Complete AV and stage architecture for 800 delegates. Included 45ft high-definition LED curve wall, custom sponsor booth fabrications, registration zone styling, and professional gala dinner arrangement.',
-    'Zoho Corporation Enterprise Partner Meet', 'Trade Centre Expo Hall, Madurai',
-    '2026-02-05T00:00:00Z',
-    'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80',
-    '["https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80"]',
-    FALSE, TRUE, 4
-)
-ON CONFLICT ("slug") DO NOTHING;
-
--- 9. Sample Customers
-INSERT INTO "Customer" ("id", "name", "phone", "email", "address", "notes") VALUES
-('cst-001', 'Karthik Rajan', '+91 98401 12233', 'karthik.rajan@example.com', '12, Anna Nagar Main Road, Madurai', 'VIP customer. Wants grand floral Muhurtham mandapam + cinematic video.'),
-('cst-002', 'Soundarya Swaminathan', '+91 98765 43211', 'soundarya.s@example.com', '45, West Masi Street, Madurai', 'Interested in Royal Gold Wedding Package for November.'),
-('cst-003', 'Annamalai Chettiar', '+91 94433 22110', 'annamalai.c@example.com', '88, Palace Road, Karaikudi', 'Looking for 3-day wedding celebration decor & catering coordination.')
-ON CONFLICT ("phone") DO NOTHING;
-
--- 10. Sample Enquiries
-INSERT INTO "Enquiry" (
-    "id", "reference", "customerId", "eventType", "eventTitle", "eventDate", "endDate",
-    "venueName", "venueAddress", "venueCity", "guestCount", "isOutdoor", "selectedServiceIds",
-    "budgetRange", "preferredContactMethod", "consultationTime", "additionalNotes", "status", "assignedToUserId"
-) VALUES
-(
-    'enq-001', 'ENQ-2026-0001', 'cst-001',
-    'Wedding & Reception', 'Karthik & Divya Marriage Celebration',
-    '2026-11-15T09:00:00Z', '2026-11-16T14:00:00Z',
-    'Meenakshi Sundareswarar Thirumana Mahal', 'Kamarajar Salai, Madurai', 'Madurai',
-    1200, FALSE, '["srv-001","srv-002","srv-004"]',
-    '₹2,50,000 - ₹5,00,000', 'WhatsApp', 'Evening (5 PM - 8 PM)',
-    'Need jasmine flower canopy for bride walk-in and stage cold fire entry.',
-    'CONVERTED', 'usr-admin-001'
-),
-(
-    'enq-002', 'ENQ-2026-0002', 'cst-002',
-    'Engagement & Haldi', 'Soundarya & Arvind Ring Ceremony',
-    '2026-12-05T10:00:00Z', NULL,
-    'Heritage Madurai Resort Lawn', 'Kochadai, Madurai', 'Madurai',
-    350, TRUE, '["srv-003","srv-006"]',
-    '₹1,00,000 - ₹2,50,000', 'Phone', 'Morning (10 AM - 1 PM)',
-    'Lawn event, need waterproof marquee draping and yellow marigold decor.',
-    'CONSULTATION_SCHEDULED', 'usr-mgr-002'
-),
-(
-    'enq-003', 'ENQ-2026-0003', 'cst-003',
-    'Traditional Marriage', 'Chettiar Family Grand Marriage',
-    '2026-12-28T06:00:00Z', NULL,
-    'MJM Grand Convention Hall', 'Bypass Road, Dindigul', 'Dindigul',
-    2000, FALSE, '["srv-001","srv-002","srv-005"]',
-    '₹5,00,000+', 'Phone', 'Anytime',
-    'Requires complete mandapam, 24-dish leaf catering coordination, and photography.',
-    'NEW', NULL
-)
-ON CONFLICT ("reference") DO NOTHING;
-
--- 11. Sample Bookings
-INSERT INTO "Booking" (
-    "id", "reference", "customerId", "enquiryId", "eventName", "eventType",
-    "startDate", "endDate", "venueName", "venueAddress", "venueCity", "guestCount",
-    "status", "totalAmount", "discountAmount", "taxAmount", "finalAmount",
-    "internalNotes", "termsAndConditions"
-) VALUES
-(
-    'bkg-001', 'BKG-2026-0001', 'cst-001', 'enq-001',
-    'Karthik & Divya Royal Wedding & Reception', 'Wedding & Reception',
-    '2026-11-15T06:00:00Z', '2026-11-16T15:00:00Z',
-    'Meenakshi Sundareswarar Thirumana Mahal', 'Kamarajar Salai, Madurai', 'Madurai',
-    1200, 'CONFIRMED', 210000, 10000, 36000, 236000,
-    'VIP event. Setup team to arrive on 14th evening 7 PM. Madurai Malli fresh stock confirmed from vendor.',
-    '30% advance received. 50% on Nov 13. Balance on event completion.'
-)
-ON CONFLICT ("reference") DO NOTHING;
-
--- 12. Booking Services Breakdown
-INSERT INTO "BookingService" ("id", "bookingId", "serviceId", "serviceName", "quantity", "unitPrice", "notes") VALUES
-('bsrv-001', 'bkg-001', 'srv-001', 'Royal South Indian Muhurtham Mandapam', 1, 75000, 'Temple pillar carving design with genuine Madurai jasmine strings'),
-('bsrv-002', 'bkg-001', 'srv-002', 'Grand Floral Dream Reception Stage', 1, 65000, '40ft Floral wall with dual color ambient wash and royal white sofa'),
-('bsrv-003', 'bkg-001', 'srv-004', 'Cinematic Wedding Film & Candid Photography', 1, 70000, 'Full 2-day coverage including drone & 40-page album')
-ON CONFLICT ("id") DO NOTHING;
-
--- 13. Quotation
-INSERT INTO "Quotation" (
-    "id", "quotationNumber", "version", "customerId", "bookingId", "enquiryId",
-    "validUntil", "subtotal", "discount", "taxRate", "taxAmount", "grandTotal",
-    "status", "terms", "paymentSchedule"
-) VALUES
-(
-    'qtn-001', 'QTN-2026-0001', 1, 'cst-001', 'bkg-001', 'enq-001',
-    '2026-11-01T00:00:00Z', 210000, 10000, 18, 36000, 236000,
-    'ACCEPTED',
-    '1. Valid until date mentioned.\n2. Flower varieties subject to seasonal availability.\n3. Generator backup to be arranged by venue or charged extra.',
-    '30% Advance (₹70,800) | 50% Before Event (₹1,18,000) | 20% Final Settlement (₹47,200)'
-)
-ON CONFLICT ("quotationNumber") DO NOTHING;
-
--- 14. Quotation Items
-INSERT INTO "QuotationItem" ("id", "quotationId", "serviceId", "name", "description", "quantity", "unit", "unitPrice", "discount", "total") VALUES
-('qitem-001', 'qtn-001', 'srv-001', 'Royal South Indian Muhurtham Mandapam', 'Mandapam structure + fresh floral hangings + brass urlis & lamps', 1, 'Set', 75000, 0, 75000),
-('qitem-002', 'qtn-001', 'srv-002', 'Grand Floral Dream Reception Stage', '40ft x 14ft floral wall with crystal chandeliers & couple couch', 1, 'Set', 65000, 5000, 60000),
-('qitem-003', 'qtn-001', 'srv-004', 'Cinematic Wedding Film & Candid Photography', '2 Photographers + 2 Cinematographers with Drone coverage', 1, 'Package', 70000, 5000, 65000)
-ON CONFLICT ("id") DO NOTHING;
-
--- 15. Sample Payments
-INSERT INTO "Payment" (
-    "id", "receiptNumber", "bookingId", "customerId", "amount", "paymentMethod",
-    "paymentType", "reference", "paymentDate", "notes", "status", "recordedByUserId"
-) VALUES
-(
-    'pay-001', 'RCT-2026-0001', 'bkg-001', 'cst-001', 70800, 'UPI',
-    'ADVANCE', 'UPI/20261009/489102948', CURRENT_TIMESTAMP,
-    '30% booking advance confirmation received through GooglePay', 'PAID', 'usr-admin-001'
-)
-ON CONFLICT ("receiptNumber") DO NOTHING;
-
--- 16. Notifications
-INSERT INTO "Notification" ("id", "title", "message", "type", "isRead", "link") VALUES
-('notif-001', 'New Wedding Booking Confirmed', 'Karthik & Divya Royal Wedding (BKG-2026-0001) confirmed with ₹70,800 advance.', 'BOOKING', FALSE, '/admin/bookings'),
-('notif-002', 'Upcoming Consultation', 'Heritage Madurai Lawn site visit scheduled for Soundarya Swaminathan.', 'FOLLOWUP', FALSE, '/admin/enquiries')
-ON CONFLICT ("id") DO NOTHING;
-
--- ==============================================================================
--- SCHEMA & SEED COMPLETED SUCCESSFULLY!
+-- END OF SCHEMA — SATHURAGIRI DECORATION
 -- ==============================================================================

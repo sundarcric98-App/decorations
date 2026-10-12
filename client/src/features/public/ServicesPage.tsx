@@ -1,178 +1,127 @@
 import React, { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Sparkles, Search, ArrowRight, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Sparkles, Search, Layers } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { Service, ServiceCategory } from '../../types';
-import { Badge } from '../../components/common/Badge';
-import { Button } from '../../components/common/Button';
+import { EventCategory } from '../../types';
+import { WhatsAppButton } from '../../components/common/WhatsAppButton';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
 export const ServicesPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const selectedCategory = searchParams.get('category') || 'ALL';
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['services-categories'],
-    queryFn: () => api.get<ServiceCategory[]>('/services/categories'),
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ['public-categories'],
+    queryFn: () => api.get<EventCategory[]>('/categories'),
   });
 
-  const { data: services = [], isLoading } = useQuery({
-    queryKey: ['services-list', selectedCategory, searchTerm],
-    queryFn: () => {
-      const categoryParam = selectedCategory !== 'ALL' ? `categorySlug=${selectedCategory}&` : '';
-      const searchParam = searchTerm ? `search=${encodeURIComponent(searchTerm)}&` : '';
-      return api.get<Service[]>(`/services?${categoryParam}${searchParam}`);
-    },
+  const filteredCategories = categories.filter((cat) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      cat.name.toLowerCase().includes(term) ||
+      (cat.description && cat.description.toLowerCase().includes(term))
+    );
   });
-
-  const handleCategorySelect = (slug: string) => {
-    if (slug === 'ALL') {
-      searchParams.delete('category');
-    } else {
-      searchParams.set('category', slug);
-    }
-    setSearchParams(searchParams);
-  };
 
   return (
-    <div className="pt-28 pb-20 space-y-16">
+    <div className="pt-32 pb-24 min-h-screen bg-[#FAF7F2]">
       {/* Header Banner */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-        <Badge variant="gold">Comprehensive Catalogue</Badge>
-        <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#24211F]">
-          Our Wedding & Event Services
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 mb-16">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#B8955A]/10 border border-[#B8955A]/30 text-xs font-semibold uppercase tracking-widest text-[#B8955A]">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Sathuragiri Specializations</span>
+        </div>
+        <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#28231F]">
+          Event Decoration Services
         </h1>
-        <p className="max-w-2xl mx-auto text-sm sm:text-base text-[#77716B]">
-          Explore our complete range of specialized decor and event execution services across Tamil Nadu.
+        <p className="max-w-2xl mx-auto text-sm sm:text-base text-[#77716B] leading-relaxed">
+          From grand South Indian wedding mandapams and royal reception stages to intimate birthday celebrations and traditional ceremonies, explore our bespoke decoration portfolios.
         </p>
 
-        {/* Search & Category Filter Pills */}
-        <div className="pt-6 max-w-4xl mx-auto space-y-6">
-          <div className="relative max-w-md mx-auto">
+        {/* Search Bar */}
+        <div className="pt-4 max-w-md mx-auto">
+          <div className="relative">
             <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search services (e.g. mandapam, photography, catering)..."
+              placeholder="Search category or service (e.g. Wedding, Birthday, Mandapam)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-full border border-[#E8E0D6] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#B8955A]/30 focus:border-[#B8955A] shadow-xs"
             />
           </div>
-
-          {/* Category Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button
-              onClick={() => handleCategorySelect('ALL')}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                selectedCategory === 'ALL'
-                  ? 'bg-[#B8955A] text-white shadow-luxury'
-                  : 'bg-white text-[#56504A] border border-[#E8E0D6] hover:bg-[#FAF7F2]'
-              }`}
-            >
-              All Categories
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategorySelect(cat.slug)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                  selectedCategory === cat.slug
-                    ? 'bg-[#B8955A] text-white shadow-luxury'
-                    : 'bg-white text-[#56504A] border border-[#E8E0D6] hover:bg-[#FAF7F2]'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* Services Grid */}
+      {/* Categories Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {isLoading ? (
-          <LoadingSpinner message="Loading services catalogue..." fullHeight />
-        ) : services.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-[#E8E0D6]">
-            <p className="text-sm text-[#77716B]">No services found matching your criteria.</p>
+          <div className="py-20 flex justify-center">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-[#E8E0D6] max-w-lg mx-auto p-8 shadow-xs">
+            <Layers className="w-12 h-12 text-[#B8955A] mx-auto mb-3" />
+            <h3 className="font-serif text-xl font-bold text-[#28231F]">No Event Categories Found</h3>
+            <p className="text-sm text-[#77716B] mt-1">
+              {searchTerm ? 'Try adjusting your search criteria.' : 'Categories will be displayed once published.'}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredCategories.map((cat) => (
               <div
-                key={service.id}
-                className="bg-white rounded-2xl overflow-hidden border border-[#E8E0D6] shadow-sm hover:shadow-luxury hover:border-[#B8955A]/60 transition-all duration-300 flex flex-col justify-between group"
+                key={cat.id}
+                className="group bg-white rounded-2xl overflow-hidden border border-[#E8E0D6] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
-                <div>
-                  {/* Image Container */}
-                  <div className="relative h-60 overflow-hidden bg-gray-100">
-                    <img
-                      src={service.coverImage}
-                      alt={service.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 left-3 bg-[#FAF7F2]/90 backdrop-blur-xs px-3 py-1 rounded-full text-[11px] font-bold text-[#96743A] border border-[#EBDDBF]">
-                      {service.category?.name || 'Decor Service'}
-                    </div>
-                    {service.isFeatured && (
-                      <div className="absolute top-3 right-3 bg-[#B8955A] text-white px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-xs">
-                        Featured
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content Details */}
-                  <div className="p-6 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-serif text-lg font-bold text-[#24211F] group-hover:text-[#B8955A] transition-colors leading-snug">
-                        {service.name}
-                      </h3>
-                    </div>
-
-                    <p className="text-xs text-[#77716B] line-clamp-3 leading-relaxed">
-                      {service.shortDesc}
-                    </p>
-
-                    {/* Price and pricing method */}
-                    <div className="pt-2 border-t border-gray-100 flex items-baseline justify-between">
-                      <span className="text-[11px] font-medium text-gray-400">Pricing</span>
-                      <span className="text-sm font-bold text-[#B8955A]">
-                        {service.startingPrice
-                          ? `₹${Number(service.startingPrice).toLocaleString('en-IN')} (${service.pricingMethod})`
-                          : service.pricingMethod || 'Custom Quotation'}
+                {/* Category Cover Image */}
+                <div className="relative h-64 overflow-hidden bg-gray-100">
+                  <img
+                    src={
+                      cat.cover_image_url ||
+                      cat.coverImage ||
+                      'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'
+                    }
+                    alt={cat.name}
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h2 className="font-serif text-xl font-bold text-white tracking-wide">
+                      {cat.name}
+                    </h2>
+                    {cat.projectCount !== undefined && cat.projectCount > 0 && (
+                      <span className="text-xs text-[#E6D5B8] font-medium">
+                        {cat.projectCount} Showcase Project{cat.projectCount > 1 ? 's' : ''}
                       </span>
-                    </div>
-
-                    {/* Add-ons chips */}
-                    {service.availableAddons && service.availableAddons.length > 0 && (
-                      <div className="pt-2 flex flex-wrap gap-1.5">
-                        {service.availableAddons.slice(0, 2).map((addon, i) => (
-                          <span
-                            key={i}
-                            className="text-[10px] bg-[#FAF7F2] text-[#56504A] px-2 py-0.5 rounded-md border border-[#E8E0D6] flex items-center gap-1"
-                          >
-                            <Check className="w-3 h-3 text-[#24845D]" /> {addon}
-                          </span>
-                        ))}
-                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Card Actions */}
-                <div className="p-6 pt-0 flex items-center gap-3">
-                  <Link to={`/services/${service.slug}`} className="flex-1">
-                    <Button variant="secondary" size="sm" className="w-full">
-                      View Details
-                    </Button>
-                  </Link>
-                  <Link to={`/book-event?service=${service.id}`} className="flex-1">
-                    <Button variant="gold" size="sm" className="w-full">
-                      Enquire Now
-                    </Button>
-                  </Link>
+                {/* Details & Actions */}
+                <div className="p-6 flex flex-col justify-between flex-grow">
+                  <p className="text-sm text-[#77716B] leading-relaxed line-clamp-3 mb-6">
+                    {cat.description ||
+                      'Expertly customized theme decoration, floral arrangements, and stage backdrop styling for your event.'}
+                  </p>
+
+                  <div className="flex items-center gap-3 pt-4 border-t border-[#E8E0D6]">
+                    <Link
+                      to={`/portfolio?category=${cat.slug}`}
+                      className="flex-1 text-center py-2.5 px-3 rounded-xl border border-[#B8955A] text-[#B8955A] hover:bg-[#B8955A] hover:text-white text-xs font-semibold tracking-wide transition-all shadow-2xs"
+                    >
+                      View Gallery
+                    </Link>
+
+                    <WhatsAppButton
+                      size="sm"
+                      categoryName={cat.name}
+                      label="Enquire on WhatsApp"
+                      className="flex-1 py-2.5 text-xs"
+                    />
+                  </div>
                 </div>
               </div>
             ))}

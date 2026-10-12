@@ -3,635 +3,528 @@ import { Link } from 'react-router-dom';
 import {
   Sparkles,
   ArrowRight,
-  CheckCircle2,
-  Calendar,
   Phone,
-  MessageSquare,
   ShieldCheck,
   Clock,
   Award,
   ChevronRight,
-  Plus,
-  Minus,
-  Star,
   Camera,
-  Utensils,
-  Lightbulb,
-  Music,
+  MapPin,
+  Calendar,
+  Layers,
+  HeartHandshake,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
-import { Card } from '../../components/common/Card';
-import { Badge } from '../../components/common/Badge';
+import { WhatsAppButton } from '../../components/common/WhatsAppButton';
 import { useSettings } from '../../context/SettingsContext';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { Service, ServiceCategory, PortfolioProject, Package } from '../../types';
+import { EventCategory, PortfolioProject } from '../../types';
 
 export const HomePage: React.FC = () => {
   const { settings } = useSettings();
-  const [activeFaq, setActiveFaq] = useState<number | null>(0);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Fetch featured services, categories, packages, and portfolio from backend
-  const { data: categories = [] } = useQuery({
+  // Fetch active categories from Supabase
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['public-categories'],
-    queryFn: () => api.get<ServiceCategory[]>('/services/categories'),
+    queryFn: () => api.get<EventCategory[]>('/categories'),
   });
 
-  const { data: featuredServices = [] } = useQuery({
-    queryKey: ['public-featured-services'],
-    queryFn: () => api.get<Service[]>('/services?featured=true'),
+  // Fetch published portfolio projects from Supabase
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+    queryKey: ['public-portfolio-projects'],
+    queryFn: () => api.get<PortfolioProject[]>('/portfolio?limit=8'),
   });
 
-  const { data: featuredProjects = [] } = useQuery({
-    queryKey: ['public-featured-portfolio'],
-    queryFn: () => api.get<PortfolioProject[]>('/portfolio?featured=true'),
-  });
-
-  const { data: packages = [] } = useQuery({
-    queryKey: ['public-packages'],
-    queryFn: () => api.get<Package[]>('/packages'),
-  });
-
-  const howItWorksSteps = [
-    {
-      step: '01',
-      title: 'Submit Enquiry',
-      desc: 'Share your event date, venue, guest count, and decor inspiration with us online or via WhatsApp.',
-    },
-    {
-      step: '02',
-      title: 'Free Consultation',
-      desc: 'Discuss thematic concepts, flower choices, and venue layout with our senior wedding stylist.',
-    },
-    {
-      step: '03',
-      title: 'Custom Quotation',
-      desc: 'Receive a transparent, itemized quotation tailored to your exact preferences and budget.',
-    },
-    {
-      step: '04',
-      title: 'Confirmation & Planning',
-      desc: 'Lock in your auspicious date with an advance deposit while our master artisans begin preparations.',
-    },
-    {
-      step: '05',
-      title: 'Flawless Execution',
-      desc: 'Our dedicated crew sets up 4-6 hours prior to the rituals, ensuring a breathtaking celebration.',
-    },
-  ];
-
-  const whyChooseUs = [
+  const valueProps = [
     {
       icon: <Sparkles className="w-6 h-6 text-[#B8955A]" />,
-      title: 'Traditional Temple Craftsmanship',
-      desc: 'Sculpted temple pillar mandapams, lotus sanctums, and fragrant fresh flower hangings rooted in South Indian traditions.',
+      title: 'South Indian Master Artistry',
+      desc: 'Bespoke temple mandapams, carved pillars, authentic fragrant florals, and majestic royal reception backdrops.',
     },
     {
       icon: <Clock className="w-6 h-6 text-[#B8955A]" />,
-      title: '100% Punctual Setup Guarantee',
-      desc: 'Our logistics and floral crews complete all stage and entrance fabrications well before the auspicious Muhurtham hours.',
+      title: 'Guaranteed Punctual Setup',
+      desc: 'Our experienced crews complete all stage, entrance, and hall installations well ahead of auspicious rituals.',
     },
     {
       icon: <ShieldCheck className="w-6 h-6 text-[#B8955A]" />,
-      title: 'A-to-Z End-to-End Solutions',
-      desc: 'From sacred mandapams to 4K drone cinematography, traditional 24-item leaf feasts, and live stalls, everything under one roof.',
+      title: 'End-to-End Event Management',
+      desc: 'From sacred wedding stages to pre-wedding photography zones, traditional catering setups, and festive stalls.',
     },
     {
       icon: <Award className="w-6 h-6 text-[#B8955A]" />,
-      title: 'Transparent Itemized Pricing',
-      desc: 'No hidden surcharges. Receive clear line-item breakdowns, tax details, and structured milestone payments.',
-    },
-  ];
-
-  const faqs = [
-    {
-      q: 'How far in advance should we book Sathuragiri Decoration for our wedding?',
-      a: 'For auspicious wedding season dates (Muhurtham days), we strongly recommend booking 2 to 6 months in advance to reserve our master artisans and equipment. For birthdays and intimate functions, 2 to 3 weeks notice is usually sufficient.',
-    },
-    {
-      q: 'Do you take event decoration contracts outside Madurai?',
-      a: 'Yes! While we are headquartered in Madurai, our teams regularly execute destination weddings and grand receptions across Tamil Nadu including Chennai, Coimbatore, Trichy, Tirunelveli, Dindigul, and Karaikudi.',
-    },
-    {
-      q: 'Can we customize stage dimensions and fresh flower choices?',
-      a: 'Absolutely. Every stage, mandapam, and entrance is customized to your venue’s specific height and width. You can choose from fresh Madurai jasmine (Malli), Bangalore roses, Dutch orchids, carnations, or traditional marigolds.',
-    },
-    {
-      q: 'What is the standard payment and advance schedule?',
-      a: 'Our standard schedule is 30% advance on booking confirmation to block dates, 50% payable 2 days before the event when materials are prepped, and the final 20% balance settled on the event day after completion.',
-    },
-    {
-      q: 'Do you handle catering and photography as well?',
-      a: 'Yes. Sathuragiri Decoration provides complete A-to-Z wedding services including traditional 24-item banana leaf feasts, live chaat/dosa counters, candid photography, 4K cinematic wedding films, drone coverage, and smart lighting setups.',
-    },
-  ];
-
-  const sampleTestimonials = [
-    {
-      name: 'Dr. Karthik & Dr. Divya',
-      event: 'Traditional Temple Wedding, Madurai',
-      quote:
-        'Sathuragiri Decoration brought divine beauty to our marriage. The fresh Madurai jasmine mandapam smelled heavenly and looked like a palace temple. Every guest was awestruck!',
-      rating: 5,
-    },
-    {
-      name: 'Vigneshwaran & Pooja',
-      event: 'Grand Reception, Coimbatore',
-      quote:
-        'The 40ft floral wall and chandelier stage were beyond expectations. Extremely professional team, completed setup 5 hours before the reception. Truly unforgettable!',
-      rating: 5,
-    },
-    {
-      name: 'Annamalai Chettiar',
-      event: 'Family Betrothal & Engagement',
-      quote:
-        'Transparent pricing and no last-minute hassles. They coordinated both the decor and the traditional leaf feast catering flawlessly. Highly recommended!',
-      rating: 5,
+      title: 'Transparent WhatsApp Booking',
+      desc: 'Instant direct consultations via WhatsApp with customized design ideas, transparent pricing, and zero hidden costs.',
     },
   ];
 
   return (
-    <div className="space-y-24 sm:space-y-32">
-      {/* 1. HERO SECTION */}
-      <section className="relative min-h-[90vh] flex items-center justify-center pt-24 pb-16 overflow-hidden">
-        {/* Background Image with warm luxury overlay */}
+    <div className="min-h-screen bg-[#FAF7F2] text-[#28231F] selection:bg-[#B8955A]/20 selection:text-[#B8955A]">
+      {/* ---------------------------------------------------------------------- */}
+      {/* 1. HERO SECTION                                                        */}
+      {/* ---------------------------------------------------------------------- */}
+      <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-20 pb-16">
+        {/* Background Image with Elegant Gradient Overlay */}
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2000&q=85"
-            alt="Royal South Indian Wedding Decor"
-            className="w-full h-full object-cover object-center scale-105 animate-pulse duration-[10000ms]"
+            alt="Sathuragiri Luxury Wedding Decoration Stage"
+            className="w-full h-full object-cover object-center scale-105 animate-in fade-in zoom-in-105 duration-1000"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1A1816]/90 via-[#1A1816]/75 to-[#1A1816]/60 backdrop-blur-[1.5px]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#1A1816]/40 to-[#1A1816]/95" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1A1816] via-[#1A1816]/75 to-[#1A1816]/50" />
+          <div className="absolute inset-0 bg-radial-at-c from-transparent via-[#1A1816]/40 to-[#1A1816]" />
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#B8955A]/20 border border-[#B8955A]/40 text-[#D4B77D] text-xs font-semibold tracking-widest uppercase animate-in fade-in slide-in-from-top-4 duration-700">
-            <Sparkles className="w-3.5 h-3.5" />
-            {settings?.tagline || 'Every Celebration, Beautifully Crafted'}
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white py-12">
+          {/* Brand Tagline Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#B8955A]/40 mb-6 text-xs sm:text-sm font-medium tracking-widest text-[#E6D5B8] uppercase animate-in slide-in-from-top duration-700">
+            <Sparkles className="w-4 h-4 text-[#B8955A]" />
+            <span>Sathuragiri Decoration</span>
           </div>
 
-          <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] text-white">
-            We Make Your Special Moments{' '}
-            <span className="gold-gradient-text block sm:inline italic">Unforgettable</span>
+          {/* Main Headline */}
+          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.15] drop-shadow-md">
+            Every Celebration, <br className="hidden sm:inline" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ECD7B5] via-[#B8955A] to-[#D4B77D] italic">
+              Beautifully Crafted.
+            </span>
           </h1>
 
-          <p className="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-[#CECDCC] font-light leading-relaxed">
-            South India’s premier full-service wedding planners & decorators. Royal temple mandapams, starlit reception stages, authentic banana leaf feasts, and 4K cinema films crafted with timeless elegance.
+          {/* Business Introduction */}
+          <p className="max-w-3xl mx-auto text-base sm:text-xl text-[#ECE7DF] leading-relaxed mb-10 font-sans font-light drop-shadow">
+            South India’s premier luxury wedding & celebration designers. We craft majestic South Indian temple mandapams, regal reception stages, joyful baby showers, and unforgettable celebrations with breathtaking floral artistry.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link to="/services" className="w-full sm:w-auto">
+          {/* Call to Actions */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <WhatsAppButton
+              size="lg"
+              variant="hero"
+              label="Chat on WhatsApp"
+              className="w-full sm:w-auto shadow-2xl"
+            />
+
+            <Link to="/portfolio" className="w-full sm:w-auto">
               <Button
-                variant="gold"
+                variant="outline"
                 size="lg"
-                className="w-full sm:w-auto text-base"
-                rightIcon={<ArrowRight className="w-5 h-5" />}
+                className="w-full sm:w-auto border-white/60 text-white hover:bg-white/10 backdrop-blur-sm px-7 py-3.5 rounded-full text-base font-medium"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
               >
-                Explore Our Services
+                Explore Portfolio
               </Button>
             </Link>
-            <Link to="/book-event" className="w-full sm:w-auto">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="w-full sm:w-auto text-base bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm"
-              >
-                Get a Free Quote
-              </Button>
-            </Link>
           </div>
 
-          {/* Quick highlight bar */}
-          <div className="pt-10 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto border-t border-white/15 text-left">
-            <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-xs">
-              <div className="text-xl font-bold font-serif text-[#D4B77D]">100%</div>
-              <div className="text-[11px] text-gray-300 font-medium uppercase tracking-wider">Fresh Flowers</div>
+          {/* Quick Metrics Bar */}
+          <div className="mt-14 pt-8 border-t border-white/15 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div>
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">500+</p>
+              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">Weddings Crafted</p>
             </div>
-            <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-xs">
-              <div className="text-xl font-bold font-serif text-[#D4B77D]">A to Z</div>
-              <div className="text-[11px] text-gray-300 font-medium uppercase tracking-wider">Event Services</div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">9+</p>
+              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">Event Categories</p>
             </div>
-            <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-xs">
-              <div className="text-xl font-bold font-serif text-[#D4B77D]">Custom</div>
-              <div className="text-[11px] text-gray-300 font-medium uppercase tracking-wider">3D Stage Layouts</div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">100%</p>
+              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">Punctual Execution</p>
             </div>
-            <div className="p-3 bg-white/5 rounded-xl border border-white/10 backdrop-blur-xs">
-              <div className="text-xl font-bold font-serif text-[#D4B77D]">On-Time</div>
-              <div className="text-[11px] text-gray-300 font-medium uppercase tracking-wider">Setup Delivery</div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-serif font-bold text-[#E6D5B8]">5.0 ★</p>
+              <p className="text-xs text-[#CFCAC2] uppercase tracking-wider mt-1">Customer Reviews</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. FEATURED SERVICE CATEGORIES */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-          <Badge variant="gold">Our Core Offerings</Badge>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-            Everything for Your Grand Celebration
-          </h2>
-          <p className="text-sm sm:text-base text-[#77716B]">
-            From sacred rituals to opulent evening receptions, we provide turnkey event solutions tailored to traditional and modern sensibilities.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.slice(0, 8).map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/services?category=${cat.slug}`}
-              className="group relative h-80 rounded-2xl overflow-hidden shadow-sm border border-[#E8E0D6] hover:shadow-luxury hover:border-[#B8955A]/50 transition-all duration-300"
-            >
-              <img
-                src={cat.image || 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'}
-                alt={cat.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1A1816]/90 via-[#1A1816]/40 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-5 text-white space-y-1.5">
-                <h3 className="font-serif text-lg font-bold text-white group-hover:text-[#D4B77D] transition-colors flex items-center justify-between">
-                  <span>{cat.name}</span>
-                  <ChevronRight className="w-4 h-4 text-[#B8955A] group-hover:translate-x-1 transition-transform" />
-                </h3>
-                <p className="text-xs text-gray-300 line-clamp-2 leading-relaxed">
-                  {cat.description || 'Customized decor arrangements crafted for your special day.'}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        <div className="text-center mt-10">
-          <Link to="/services">
-            <Button variant="outline" size="md" rightIcon={<ArrowRight className="w-4 h-4" />}>
-              View All 15+ Service Categories
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* 3. FROM PLANNING TO CELEBRATION (FULL SERVICE SPECTRUM) */}
-      <section className="bg-white py-20 border-y border-[#E8E0D6]">
+      {/* ---------------------------------------------------------------------- */}
+      {/* 2. FEATURED EVENT CATEGORIES (SUPABASE DRIVEN)                          */}
+      {/* ---------------------------------------------------------------------- */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <Badge variant="gold">A-to-Z Event Solutions</Badge>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F] leading-tight">
-                From Sacred Rituals to Majestic Revelry
-              </h2>
-              <p className="text-sm sm:text-base text-[#77716B] leading-relaxed">
-                Why juggle ten different contractors when Sathuragiri Decoration manages the entire tapestry of your event? Our seasoned in-house production crew orchestrates every detail with artistic flair and military precision.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                {[
-                  { icon: <Sparkles className="w-4 h-4 text-[#B8955A]" />, text: 'Sacred Muhurtham Mandapams' },
-                  { icon: <Sparkles className="w-4 h-4 text-[#B8955A]" />, text: 'Opulent Reception Stages' },
-                  { icon: <Sparkles className="w-4 h-4 text-[#B8955A]" />, text: 'Haldi & Sangeet Sets' },
-                  { icon: <Camera className="w-4 h-4 text-[#B8955A]" />, text: '4K Drone & Candid Cinema' },
-                  { icon: <Utensils className="w-4 h-4 text-[#B8955A]" />, text: 'Authentic Leaf Feasts & Stalls' },
-                  { icon: <Lightbulb className="w-4 h-4 text-[#B8955A]" />, text: 'Ambient Lighting & Trussing' },
-                  { icon: <Sparkles className="w-4 h-4 text-[#B8955A]" />, text: 'Floral Tunnels & Gateways' },
-                  { icon: <Music className="w-4 h-4 text-[#B8955A]" />, text: 'Audio-Visuals & Pyro Sparklers' },
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2.5 p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E0D6]">
-                    {item.icon}
-                    <span className="text-xs font-semibold text-[#24211F]">{item.text}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-4 flex items-center gap-4">
-                <Link to="/book-event">
-                  <Button variant="gold" size="md">
-                    Request Custom Event Plan
-                  </Button>
-                </Link>
-                <Link to="/about">
-                  <Button variant="ghost" size="md">
-                    Learn Our Story →
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Visual Collage */}
-            <div className="grid grid-cols-2 gap-4">
-              <img
-                src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80"
-                alt="Stage Decor"
-                className="rounded-2xl shadow-luxury object-cover h-64 w-full"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80"
-                alt="Haldi Decor"
-                className="rounded-2xl shadow-luxury object-cover h-64 w-full mt-6"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80"
-                alt="Catering Feast"
-                className="rounded-2xl shadow-luxury object-cover h-64 w-full"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=800&q=80"
-                alt="Candid Photography"
-                className="rounded-2xl shadow-luxury object-cover h-64 w-full mt-6"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. PACKAGES PREVIEW */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-          <Badge variant="gold">Curated Collections</Badge>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-            Transparent Wedding & Event Packages
-          </h2>
-          <p className="text-sm sm:text-base text-[#77716B]">
-            Choose from our pre-designed luxury wedding packages or customize every element to match your venue and style.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {packages.slice(0, 3).map((pkg) => (
-            <Card
-              key={pkg.id}
-              variant={pkg.isFeatured ? 'bordered' : 'default'}
-              className={`flex flex-col justify-between p-8 relative ${
-                pkg.isFeatured ? 'bg-white shadow-luxury-lg' : 'bg-[#FAF7F2]'
-              }`}
-            >
-              {pkg.isFeatured && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#B8955A] text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm">
-                  Most Popular
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-serif text-xl font-bold text-[#24211F]">{pkg.name}</h3>
-                  <p className="text-xs text-[#77716B] mt-1.5 leading-relaxed">{pkg.description}</p>
-                </div>
-
-                <div className="py-3 border-y border-[#E8E0D6]">
-                  <span className="text-xs text-[#77716B] uppercase font-semibold">Starting From</span>
-                  <div className="font-serif text-2xl font-bold text-[#B8955A]">
-                    {pkg.packagePrice ? `₹${Number(pkg.packagePrice).toLocaleString('en-IN')}` : 'Custom Quote'}
-                  </div>
-                </div>
-
-                <div className="space-y-2.5">
-                  <span className="text-xs font-bold uppercase text-[#24211F] tracking-wider block">
-                    What's Included:
-                  </span>
-                  <ul className="space-y-2 text-xs text-[#56504A]">
-                    {(pkg.includedServices || []).slice(0, 5).map((serviceName, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#24845D] shrink-0 mt-0.5" />
-                        <span>{serviceName}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="pt-8">
-                <Link to={`/book-event?package=${pkg.slug}`} className="w-full block">
-                  <Button
-                    variant={pkg.isFeatured ? 'gold' : 'secondary'}
-                    size="md"
-                    className="w-full"
-                  >
-                    Select This Package
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        <div className="text-center mt-10">
-          <Link to="/packages">
-            <Button variant="ghost" size="md" rightIcon={<ArrowRight className="w-4 h-4" />}>
-              Explore Full Packages & Custom Add-ons
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* 5. HOW IT WORKS */}
-      <section className="bg-[#FAF7F2] py-20 border-y border-[#E8E0D6]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
-            <Badge variant="gold">Seamless Process</Badge>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-              How We Bring Your Vision to Life
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-[#B8955A] font-semibold text-xs uppercase tracking-widest block mb-2">
+              Our Event Specializations
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#28231F] mb-4">
+              Featured Event Services
             </h2>
-            <p className="text-sm text-[#77716B]">
-              A stress-free, 5-stage collaborative journey from initial consultation to final event celebration.
+            <p className="text-[#77716B] text-base leading-relaxed">
+              Explore our wide array of bespoke decoration services, each thoughtfully designed to reflect South Indian tradition, regal grandeur, and contemporary elegance.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-            {howItWorksSteps.map((s, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl border border-[#E8E0D6] space-y-3 relative shadow-xs hover:border-[#B8955A] transition-colors">
-                <div className="font-serif text-2xl font-bold text-[#B8955A]">{s.step}</div>
-                <h3 className="font-serif text-base font-bold text-[#24211F]">{s.title}</h3>
-                <p className="text-xs text-[#77716B] leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+          {categoriesLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-96 rounded-2xl bg-gray-100 animate-pulse" />
+              ))}
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="text-center py-16 bg-[#FAF7F2] rounded-2xl border border-[#E8E0D6] p-8">
+              <Layers className="w-12 h-12 text-[#B8955A] mx-auto mb-3" />
+              <p className="font-serif text-xl font-bold text-[#28231F]">No Categories Published Yet</p>
+              <p className="text-sm text-[#77716B] mt-1">Active categories will be presented here as soon as they are added.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="group relative bg-[#FAF7F2] rounded-2xl overflow-hidden border border-[#E8E0D6] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                >
+                  {/* Category Image Cover */}
+                  <div className="relative h-64 overflow-hidden bg-gray-200">
+                    <img
+                      src={
+                        cat.cover_image_url ||
+                        cat.coverImage ||
+                        'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'
+                      }
+                      alt={cat.name}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="font-serif text-xl font-bold text-white tracking-wide">
+                        {cat.name}
+                      </h3>
+                      {cat.projectCount !== undefined && cat.projectCount > 0 && (
+                        <span className="text-xs text-[#E6D5B8] font-medium">
+                          {cat.projectCount} Completed Projects
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-      {/* 6. FEATURED REAL WEDDINGS & PORTFOLIO */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-          <div className="space-y-2">
-            <Badge variant="gold">Visual Gallery</Badge>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-              Recent Celebrations Crafted by Sathuragiri
-            </h2>
-          </div>
-          <Link to="/portfolio">
-            <Button variant="outline" size="sm" rightIcon={<ArrowRight className="w-4 h-4" />}>
-              View Full Gallery
-            </Button>
-          </Link>
-        </div>
+                  {/* Category Details & Actions */}
+                  <div className="p-6 flex flex-col justify-between flex-grow">
+                    <p className="text-sm text-[#77716B] leading-relaxed line-clamp-3 mb-6">
+                      {cat.description ||
+                        'Exquisitely designed stage decorations, floral concepts, and ambient styling for your celebration.'}
+                    </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {featuredProjects.slice(0, 3).map((proj) => (
-            <Link
-              key={proj.id}
-              to={`/portfolio/${proj.slug}`}
-              className="group rounded-2xl overflow-hidden bg-white border border-[#E8E0D6] shadow-sm hover:shadow-luxury transition-all duration-300 flex flex-col"
-            >
-              <div className="relative h-64 overflow-hidden">
-                <img
-                  src={proj.coverImage}
-                  alt={proj.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-3 left-3 bg-[#FAF7F2]/90 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-bold text-[#96743A] border border-[#EBDDBF]">
-                  {proj.category}
+                    <div className="flex items-center gap-3 pt-4 border-t border-[#E8E0D6]">
+                      <Link
+                        to={`/portfolio?category=${cat.slug}`}
+                        className="flex-1 text-center py-2 px-3 rounded-xl border border-[#B8955A] text-[#B8955A] hover:bg-[#B8955A] hover:text-white text-xs font-semibold tracking-wide transition-all"
+                      >
+                        View Gallery
+                      </Link>
+
+                      <WhatsAppButton
+                        size="sm"
+                        categoryName={cat.name}
+                        label="Enquire"
+                        className="flex-1 py-2"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="p-6 space-y-2 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="font-serif text-lg font-bold text-[#24211F] group-hover:text-[#B8955A] transition-colors">
-                    {proj.title}
-                  </h3>
-                  <p className="text-xs text-[#77716B] line-clamp-2 mt-1 leading-relaxed">
-                    {proj.description}
-                  </p>
-                </div>
-                {proj.location && (
-                  <p className="text-[11px] font-semibold text-[#B8955A] pt-2 border-t border-gray-100">
-                    📍 {proj.location}
-                  </p>
-                )}
-              </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-12">
+            <Link to="/services">
+              <Button
+                variant="outline"
+                size="md"
+                rightIcon={<ChevronRight className="w-4 h-4" />}
+                className="border-[#B8955A] text-[#B8955A] hover:bg-[#B8955A] hover:text-white"
+              >
+                View All Categories & Services
+              </Button>
             </Link>
-          ))}
+          </div>
         </div>
       </section>
 
-      {/* 7. WHY CHOOSE US */}
-      <section className="bg-white py-20 border-y border-[#E8E0D6]">
+      {/* ---------------------------------------------------------------------- */}
+      {/* 3. RECENTLY COMPLETED DECORATION PROJECTS (SUPABASE PORTFOLIO)         */}
+      {/* ---------------------------------------------------------------------- */}
+      <section className="py-20 bg-[#FAF7F2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
-            <Badge variant="gold">Why Sathuragiri</Badge>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-              The Gold Standard in Event Planning
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16">
+            <div className="max-w-2xl">
+              <span className="text-[#B8955A] font-semibold text-xs uppercase tracking-widest block mb-2">
+                Real Celebrations Showcase
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#28231F] mb-4">
+                Recently Completed Projects
+              </h2>
+              <p className="text-[#77716B] text-base leading-relaxed">
+                Take inspiration from our recently decorated weddings, grand receptions, traditional ceremonies, and celebratory stages.
+              </p>
+            </div>
+
+            <div className="mt-6 md:mt-0">
+              <Link to="/portfolio">
+                <Button
+                  variant="gold"
+                  size="md"
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                >
+                  Full Portfolio Gallery
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {projectsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-80 rounded-2xl bg-gray-200 animate-pulse" />
+              ))}
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-2xl border border-[#E8E0D6] p-8">
+              <Camera className="w-12 h-12 text-[#B8955A] mx-auto mb-3" />
+              <p className="font-serif text-xl font-bold text-[#28231F]">No Projects Available</p>
+              <p className="text-sm text-[#77716B] mt-1">Completed decoration works will appear here as soon as they are published.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {projects.slice(0, 8).map((proj) => (
+                <div
+                  key={proj.id}
+                  className="group relative bg-white rounded-2xl overflow-hidden border border-[#E8E0D6] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                >
+                  {/* Project Image */}
+                  <div className="relative h-56 overflow-hidden bg-gray-100">
+                    <img
+                      src={
+                        proj.cover_image_url ||
+                        proj.coverImage ||
+                        'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80'
+                      }
+                      alt={proj.title}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+                      onClick={() =>
+                        setSelectedImage(
+                          proj.cover_image_url ||
+                            proj.coverImage ||
+                            'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80'
+                        )
+                      }
+                      loading="lazy"
+                    />
+                    <div className="absolute top-3 left-3">
+                      <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[11px] font-semibold text-white tracking-wide">
+                        {proj.categoryName || 'Decoration'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Project Body */}
+                  <div className="p-5 flex flex-col justify-between flex-grow">
+                    <div>
+                      <Link to={`/portfolio/${proj.slug}`}>
+                        <h3 className="font-serif text-lg font-bold text-[#28231F] hover:text-[#B8955A] transition-colors line-clamp-1 mb-2">
+                          {proj.title}
+                        </h3>
+                      </Link>
+                      <p className="text-xs text-[#77716B] line-clamp-2 mb-4 leading-relaxed">
+                        {proj.description || 'Crafted with passion, traditional elegance, and meticulous floral arrangements.'}
+                      </p>
+                      {proj.location && (
+                        <p className="text-xs text-gray-500 flex items-center gap-1 mb-4">
+                          <MapPin className="w-3.5 h-3.5 text-[#B8955A]" />
+                          <span>{proj.location}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-[#E8E0D6] flex items-center justify-between gap-2">
+                      <Link
+                        to={`/portfolio/${proj.slug}`}
+                        className="text-xs text-[#28231F] font-semibold hover:text-[#B8955A] transition-colors"
+                      >
+                        View Photos →
+                      </Link>
+
+                      <WhatsAppButton
+                        size="sm"
+                        projectTitle={proj.title}
+                        categoryName={proj.categoryName}
+                        label="Enquire"
+                        className="py-1 px-3 text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------------------- */}
+      {/* 4. WHY CHOOSE SATHURAGIRI DECORATION                                   */}
+      {/* ---------------------------------------------------------------------- */}
+      <section className="py-20 bg-white border-y border-[#E8E0D6]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-[#B8955A] font-semibold text-xs uppercase tracking-widest block mb-2">
+              The Sathuragiri Promise
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#28231F] mb-4">
+              Why Couples & Families Choose Us
             </h2>
-            <p className="text-sm text-[#77716B]">
-              Rooted in rich heritage and elevated by modern aesthetics and flawless execution.
+            <p className="text-[#77716B] text-base leading-relaxed">
+              We treat every wedding and function as our own family milestone. Here is why clients trust us across Tamil Nadu.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {whyChooseUs.map((w, idx) => (
-              <div key={idx} className="p-6 rounded-2xl bg-[#FAF7F2] border border-[#E8E0D6] space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-white border border-[#EBDDBF] flex items-center justify-center shadow-xs">
-                  {w.icon}
+            {valueProps.map((item, idx) => (
+              <div
+                key={idx}
+                className="bg-[#FAF7F2] p-8 rounded-2xl border border-[#E8E0D6] shadow-xs hover:border-[#B8955A] transition-all duration-300"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white border border-[#E8E0D6] flex items-center justify-center mb-5 shadow-xs">
+                  {item.icon}
                 </div>
-                <h3 className="font-serif text-base font-bold text-[#24211F]">{w.title}</h3>
-                <p className="text-xs text-[#77716B] leading-relaxed">{w.desc}</p>
+                <h3 className="font-serif text-lg font-bold text-[#28231F] mb-2">{item.title}</h3>
+                <p className="text-sm text-[#77716B] leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 8. CLIENT TESTIMONIALS (CLEARLY MARKED SAMPLE DEMO REVIEWS) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
-          <Badge variant="gold">Client Stories</Badge>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-            Loved by Families Across South India
-          </h2>
-          <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold">
-            (Sample demonstration customer experiences)
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {sampleTestimonials.map((t, idx) => (
-            <Card key={idx} className="p-6 flex flex-col justify-between bg-white space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-1 text-[#B8955A]">
-                  {[...Array(t.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-current" />
-                  ))}
+      {/* ---------------------------------------------------------------------- */}
+      {/* 5. ABOUT SATHURAGIRI DECORATION HIGHLIGHT                             */}
+      {/* ---------------------------------------------------------------------- */}
+      <section className="py-20 bg-[#FAF7F2]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Visual Collage */}
+            <div className="relative">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
+                <img
+                  src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80"
+                  alt="Royal Wedding Stage Craftsmanship"
+                  className="w-full h-[450px] object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-6 left-6 right-6 text-white">
+                  <p className="font-serif text-xl font-bold">Divine Mandapams & Royal Stages</p>
+                  <p className="text-xs text-[#E6D5B8] mt-1">Madurai • Rajapalayam • Tamil Nadu</p>
                 </div>
-                <p className="text-xs text-[#56504A] italic leading-relaxed">
-                  "{t.quote}"
-                </p>
               </div>
-              <div className="pt-4 border-t border-gray-100">
-                <h4 className="font-serif text-sm font-bold text-[#24211F]">{t.name}</h4>
-                <p className="text-[11px] text-[#77716B]">{t.event}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
 
-      {/* 9. FAQS ACCORDION */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-3 mb-12">
-          <Badge variant="gold">Got Questions?</Badge>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#24211F]">
-            Frequently Asked Questions
-          </h2>
-        </div>
-
-        <div className="space-y-3">
-          {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-2xl border border-[#E8E0D6] overflow-hidden transition-all duration-200"
-            >
-              <button
-                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                className="w-full px-6 py-4 flex items-center justify-between text-left font-serif text-sm sm:text-base font-bold text-[#24211F] hover:text-[#B8955A] transition-colors"
-              >
-                <span>{faq.q}</span>
-                {activeFaq === idx ? (
-                  <Minus className="w-4 h-4 text-[#B8955A] shrink-0" />
-                ) : (
-                  <Plus className="w-4 h-4 text-gray-400 shrink-0" />
-                )}
-              </button>
-              {activeFaq === idx && (
-                <div className="px-6 pb-5 text-xs sm:text-sm text-[#77716B] leading-relaxed border-t border-gray-100 pt-3 animate-in fade-in duration-200">
-                  {faq.a}
+              {/* Decorative Floating Card */}
+              <div className="absolute -bottom-6 -right-4 sm:right-6 bg-white p-5 rounded-2xl shadow-xl border border-[#E8E0D6] max-w-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#B8955A]/10 flex items-center justify-center text-[#B8955A]">
+                    <HeartHandshake className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#28231F] uppercase tracking-wider">Trusted by Families</p>
+                    <p className="text-xs text-[#77716B]">10+ Years of Craftsmanship</p>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
-          ))}
+
+            {/* Content Column */}
+            <div className="space-y-6">
+              <span className="text-[#B8955A] font-semibold text-xs uppercase tracking-widest">
+                About Sathuragiri Decoration
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#28231F] leading-tight">
+                Honoring Traditions with Unrivaled Grandeur
+              </h2>
+              <p className="text-base text-[#77716B] leading-relaxed">
+                {settings?.about_text ||
+                  'At Sathuragiri Decoration, we transform your most cherished milestones into timeless memories. Rooted in South Indian heritage and elevated by contemporary artistry, our master craftsmen create bespoke wedding mandaps, reception stages, floral masterpieces, and memorable festive ambiances.'}
+              </p>
+              <p className="text-sm text-[#77716B] leading-relaxed">
+                From auspicious Muhurtham temple setups in Madurai to opulent reception halls in Rajapalayam and surrounding districts, we ensure your family and guests are immersed in grandeur and warmth.
+              </p>
+
+              <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
+                <WhatsAppButton
+                  size="md"
+                  label="Talk to our Wedding Stylist"
+                  className="w-full sm:w-auto"
+                />
+                <Link to="/about" className="w-full sm:w-auto">
+                  <Button variant="outline" size="md" className="w-full sm:w-auto">
+                    Learn More About Us
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 10. FINAL CALL TO ACTION BANNER */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#24211F] via-[#2E2A27] to-[#1A1816] text-white p-10 sm:p-16 text-center shadow-2xl border border-[#B8955A]/30 space-y-6">
-          <div className="max-w-2xl mx-auto space-y-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#D4B77D] block">
-              Let's Begin Planning Your Special Day
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-tight">
-              Ready to Craft an Unforgettable Event?
-            </h2>
-            <p className="text-sm sm:text-base text-[#CECDCC] font-light">
-              Connect with Sathuragiri Decoration today for a complimentary venue layout consultation and detailed customized quotation.
-            </p>
-          </div>
+      {/* ---------------------------------------------------------------------- */}
+      {/* 6. WHATSAPP ENQUIRY CALL TO ACTION BANNER                              */}
+      {/* ---------------------------------------------------------------------- */}
+      <section className="py-16 bg-gradient-to-r from-[#28231F] via-[#1E1B19] to-[#28231F] text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+          <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#B8955A]/20 border border-[#B8955A]/40 text-xs font-semibold uppercase tracking-widest text-[#E6D5B8]">
+            <Sparkles className="w-3.5 h-3.5 text-[#B8955A]" />
+            Direct WhatsApp Enquiry
+          </span>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link to="/book-event">
-              <Button variant="gold" size="lg" leftIcon={<Sparkles className="w-4 h-4" />}>
-                Book Free Consultation Now
-              </Button>
-            </Link>
-            <a href={`tel:${settings?.phone || '+919842187654'}`}>
-              <Button
-                variant="secondary"
-                size="lg"
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                leftIcon={<Phone className="w-4 h-4 text-[#B8955A]" />}
-              >
-                Call {settings?.phone || '+91 98421 87654'}
-              </Button>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
+            Planning Your Dream Celebration?
+          </h2>
+
+          <p className="max-w-2xl mx-auto text-[#CECDCC] text-base sm:text-lg leading-relaxed font-light">
+            Contact us directly on WhatsApp with your event date and venue details. We will share curated design concepts, stage photographs, and a customized quotation promptly.
+          </p>
+
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <WhatsAppButton
+              size="lg"
+              variant="hero"
+              label="Start WhatsApp Enquiry Now"
+              className="w-full sm:w-auto shadow-2xl"
+            />
+            <a
+              href={`tel:${settings?.phone || '+919842187654'}`}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full border border-white/30 text-white hover:bg-white/10 text-base font-medium transition-all w-full sm:w-auto"
+            >
+              <Phone className="w-4 h-4 text-[#B8955A]" />
+              <span>Call Us: {settings?.phone || '+91 98421 87654'}</span>
             </a>
           </div>
         </div>
       </section>
+
+      {/* ---------------------------------------------------------------------- */}
+      {/* IMAGE LIGHTBOX MODAL                                                   */}
+      {/* ---------------------------------------------------------------------- */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl">
+            <img
+              src={selectedImage}
+              alt="Decoration Preview"
+              className="max-h-[85vh] w-auto mx-auto object-contain rounded-xl shadow-2xl"
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-black/70 hover:bg-black text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors"
+            >
+              Close ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

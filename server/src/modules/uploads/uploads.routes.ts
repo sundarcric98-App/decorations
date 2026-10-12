@@ -2,10 +2,12 @@ import { Router } from 'express';
 import { UploadsController, upload } from './uploads.controller.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
 
-const router = Router();
+export const uploadsRouter = Router();
 
-// Allow public image upload for inspiration images in enquiry form, and admin uploads
-router.post('/single', upload.single('image'), UploadsController.uploadSingle);
-router.post('/multiple', authenticate, upload.array('images', 10), UploadsController.uploadMultiple);
+uploadsRouter.use(authenticate);
+uploadsRouter.post('/single', upload.single('file'), UploadsController.uploadSingle);
+uploadsRouter.post('/multiple', upload.array('files', 15), UploadsController.uploadMultiple);
+uploadsRouter.post('/', upload.single('file'), UploadsController.uploadSingle);
+uploadsRouter.delete('/', UploadsController.deleteFile);
 
-export default router;
+export default uploadsRouter;
